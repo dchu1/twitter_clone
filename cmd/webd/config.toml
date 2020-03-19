@@ -1,0 +1,4 @@
+# filename: config.toml
+[server]
+server = "localhost"
+port = "9090"
