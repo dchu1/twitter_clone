@@ -1,0 +1,222 @@
+// Mixins to allow creation of additional custom drawer sizes when using the defaults at the same time
+
+@mixin bmd-drawer-x-out($size) {
+  @each $side, $abbrev in (left: l, right: r) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-drawer {
+        top: 0;
+        #{$side}: 0;
+
+        width: $size;
+        height: 100%;
+
+        @if $side == left {
+          transform: translateX(
+            -$size - 10px
+          ); 
+        } @else {
+          transform: translateX(
+            $size + 10px
+          ); 
+        }
+      }
+
+      > .bmd-layout-header,
+      > .bmd-layout-content {
+        margin-#{$side}: 0;
+      }
+    }
+  }
+}
+
+@mixin bmd-drawer-y-out($size) {
+  @each $side, $abbrev in (top: t, bottom: b) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-drawer {
+        #{$side}: 0;
+        left: 0;
+
+        width: 100%;
+        height: $size;
+
+        @if $side == top {
+          transform: translateY(
+            -$size - 10px
+          );
+        } @else {
+          transform: translateY(
+            $size + 10px
+          );
+        }
+      }
+
+      > .bmd-layout-content {
+        margin-#{$side}: 0;
+      }
+    }
+  }
+}
+
+@function bmd-drawer-breakpoint-name($breakpoint, $suffix: "") {
+  $name: "&-#{$breakpoint}#{$suffix}";
+  @if $breakpoint == xs {
+    $name: "&";
+  }
+  @return $name;
+}
+
+@mixin bmd-drawer-x-in($size) {
+  @each $side, $abbrev in (left: l, right: r) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-header {
+        width: calc(100% - #{$size});
+        margin-#{$side}: $size;
+      }
+
+      > .bmd-layout-drawer {
+        transform: translateX(0);
+      }
+
+      > .bmd-layout-content {
+        margin-#{$side}: $size;
+      }
+    }
+  }
+}
+
+@mixin bmd-drawer-y-in($size) {
+  @each $side, $abbrev in (top: t, bottom: b) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-header {
+        @if $side == top {
+          margin-#{$side}: $size;
+        }
+      }
+
+      > .bmd-layout-drawer {
+        transform: translateY(0);
+      }
+
+      > .bmd-layout-content {
+        @if $side == bottom {
+          margin-#{$side}: $size;
+        }
+      }
+    }
+  }
+}
+
+// breakpoint based open to a particular size
+@mixin bmd-drawer-x-in-up($size, $breakpoint) {
+  $name: bmd-drawer-breakpoint-name($breakpoint, "-up");
+
+  .bmd-drawer-in {
+    #{unquote($name)} {
+
+      @if $breakpoint == xs {
+        @include bmd-drawer-x-in($size);
+      } @else {
+        // responsive class
+        @include media-breakpoint-up($breakpoint) {
+          @include bmd-drawer-x-in($size);
+        }
+      }
+    }
+  }
+}
+
+// breakpoint based open to a particular size
+@mixin bmd-drawer-y-in-up($size, $breakpoint) {
+  $name: bmd-drawer-breakpoint-name($breakpoint, "-up");
+
+  .bmd-drawer-in {
+    #{unquote($name)} {
+
+      @if $breakpoint == xs {
+        @include bmd-drawer-y-in($size);
+      } @else {
+        // responsive class
+        @include media-breakpoint-up($breakpoint) {
+          @include bmd-drawer-y-in($size);
+        }
+      }
+    }
+  }
+}
+
+@mixin bmd-drawer-x-overlay() {
+  @include bmd-layout-backdrop-in();
+
+  @each $side, $abbrev in (left: l, right: r) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-header,
+      > .bmd-layout-content {
+        width: 100%;
+        margin-#{$side}: 0;
+      }
+    }
+  }
+}
+
+@mixin bmd-drawer-y-overlay() {
+  @include bmd-layout-backdrop-in();
+
+  @each $side, $abbrev in (top: t, bottom: b) {
+    .bmd-drawer-f-#{$abbrev} {
+      > .bmd-layout-header {
+        @if $side == top {
+          margin-#{$side}: 0;
+        }
+      }
+
+      > .bmd-layout-content {
+        @if $side == bottom {
+          margin-#{$side}: 0;
+        }
+      }
+    }
+  }
+}
+
+// Overlay - left/right responsive overlay classes and marker class
+@mixin bmd-drawer-x-overlay-down($breakpoint) {
+  $name: bmd-drawer-breakpoint-name($breakpoint, "-down");
+
+  .bmd-drawer-overlay {
+    #{unquote($name)} {
+
+
+      @if $breakpoint == xs {
+        &.bmd-drawer-overlay {
+          @include bmd-drawer-x-overlay();
+        }
+      } @else {
+        @include media-breakpoint-down($breakpoint) {
+          // overlay responsive class
+          @include bmd-drawer-x-overlay();
+        }
+      }
+    }
+  }
+}
+
+// Overlay - top/bottom responsive overlay classes and marker class
+@mixin bmd-drawer-y-overlay-down($breakpoint) {
+  $name: bmd-drawer-breakpoint-name($breakpoint, "-down");
+
+  .bmd-drawer-overlay {
+    #{unquote($name)} {
+
+      @if $breakpoint == xs {
+        &.bmd-drawer-overlay {
+          @include bmd-drawer-y-overlay();
+        }
+      } @else {
+        @include media-breakpoint-down($breakpoint) {
+          // overlay responsive class
+          @include bmd-drawer-y-overlay();
+        }
+      }
+    }
+  }
+}

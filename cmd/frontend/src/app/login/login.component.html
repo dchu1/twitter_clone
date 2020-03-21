@@ -1,0 +1,38 @@
+<div class="main-content" style="margin-top:70px">
+  <div class="container-fluid">
+    <form id="loginForm" #loginForm="ngForm">
+      <div class="row">
+        <div class="col-lg-4 col-md-6 col-sm-6 ml-auto mr-auto">
+          <div class="heading" style="text-align:center;">
+            <span style="color:purple; font-size: 35px;">
+              <b> Sign In </b>
+            </span>
+          </div>
+          <br>
+          <div class="fieldBk">
+            <p class="text-primary field">Email</p>
+            <input autocomplete="off" class="input" type="text" required [(ngModel)]="email" name="Email" class="form-control">
+          </div>
+          <br>
+          <div>
+            <div class="fieldBk">
+              <p class="text-primary field">Password</p>
+              <input autocomplete="off" class="input" type="password" required [(ngModel)]="password" name="Password" class="form-control">
+            </div>
+          </div>
+          <br>
+          <div style="background:none; align-items:center">
+            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!loginForm.valid" (click)="login()">
+              Sign In
+            </button>
+          </div>
+          <div style="background:none; align-items:center">
+            <button class="btn btn-round btnAnimate" style="float:left" (click)="redirectToSignup()">
+              Sign Up
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

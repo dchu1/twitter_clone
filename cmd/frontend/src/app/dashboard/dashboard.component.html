@@ -1,0 +1,60 @@
+<div class="main-content">
+  <div class="container-fluid">
+    <div class="row" style="background-color: white;">
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+        <p class="text-primary" style="font-size:24px; margin-top:10px; float:left">HOME</p>
+        <button class="btn btn-round btnAnimate" style="float:right; box-shadow:none" (click)="logout()">
+          Sign Out
+        </button>
+      </div>
+    </div>
+    <div class="row" style="background-color: white">
+      <div class="col-sm-12 col-xs-12 col-md-8 col-lg-8">
+        <div class="row">
+          <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+            <mat-form-field appearance="fill">
+              <mat-label>What's Happening?</mat-label>
+              <textarea matInput [(ngModel)]="newTweet" minlength="1" maxlength="150"></textarea>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm-6 col-xs-6 col-md-6 col-lg-6">
+            <p class="text-primary" style="font-weight:400;">Today's Feed</p>
+          </div>
+          <div class="col-sm-6 col-xs-6 col-md-6 col-lg-6">
+            <button class="btn btn-round btnAnimate" (click)="postUpdate()" style="float:right; margin:0px; padding:5px 8px 5px 8px">Post</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+            <div class="card cardNews">
+              <div *ngFor="let data of newsData">
+                {{data.news}}
+                <hr>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-12 col-xs-12 col-md-4 col-lg-4" style="border-left:1px purple solid;">
+        <div style="background-color: white; margin: 0 25px 0 25px">
+          <p class="text-primary" style="font-weight:400;">Suggested Users</p>
+          <div class="card cardUser" *ngFor="let data of usersData; let i = index">
+            <span>
+              <div style="float:left">
+                <i class="material-icons" style="font-size:40px; float:left; margin: 7px 0px 0px 0px">
+                  face
+                </i>
+                <p class="text-primary" style="float:right; margin: 15px 0px 0px 20px;">{{data.username}}</p>
+              </div>
+              <button class="btn btn-round btnAnimate" [ngClass]="{'followColor': data.status == 'Follow'}" style="float:right" (click)="userStatus(i)">{{data.status}}</button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

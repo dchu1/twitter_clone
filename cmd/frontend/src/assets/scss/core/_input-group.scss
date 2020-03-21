@@ -1,0 +1,32 @@
+@mixin input-group-button-variation($vertical-padding) {
+  .input-group-btn {
+    .btn {
+    }
+  }
+}
+
+@include input-group-button-variation(input-padding-y);
+
+.bmd-form-group-sm {
+  @include input-group-button-variation($input-padding-y-sm);
+}
+
+.bmd-form-group-lg {
+  @include input-group-button-variation($input-padding-y-lg);
+}
+
+.input-group {
+
+  .input-group-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 15px 0 15px;
+    background-color: transparent;
+    border-color: transparent;
+  }
+
+}
+.form-control:focus{
+  box-shadow: none;
+}

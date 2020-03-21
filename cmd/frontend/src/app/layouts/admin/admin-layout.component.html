@@ -1,0 +1,14 @@
+<style>
+.no-select {
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none;  /* IE 10+ */
+    user-select: none; /*default */
+}
+</style>
+
+<div class="wrapper no-select" style="background-color:white">
+    <div class="main-panel">
+        <router-outlet></router-outlet>
+    </div>
+</div>

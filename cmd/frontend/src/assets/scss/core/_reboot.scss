@@ -1,0 +1,14 @@
+body {
+  background-color: #FFFFFF;
+}
+
+a {
+  &:focus {
+    outline: none; 
+  }
+}
+
+button:focus {
+  outline: none;
+}
+

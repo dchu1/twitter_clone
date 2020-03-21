@@ -1,0 +1,76 @@
+.list-group {
+  @if $enable-flex {
+    display: flex;
+    flex-direction: column;
+  }
+
+  flex-grow: 1;
+
+  padding: .5rem 0;
+
+  // dense size variation
+  &.bmd-list-group-sm {
+    padding: .25rem 0;
+
+    .list-group-item {
+      padding: .5rem 1rem;
+    }
+  }
+}
+
+.bmd-list-group-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.list-group-item {
+  @if $enable-flex {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+  } @else {
+    display: block;
+  }
+  padding: 1rem;
+  line-height: 1;
+
+  .list-group-item-text {
+    min-width: 0;
+    max-height: 2.188rem; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :first-child {
+    margin-right: 2rem; 
+
+  > .pull-xs-right,
+  > .pull-sm-right,
+  > .pull-md-right,
+  > .pull-lg-right,
+  > .pull-xl-right,
+  > * ~ .label:last-child,
+  > * ~ .material-icons:last-child {
+    margin-right: 0;
+    margin-left: auto;
+  }
+
+  .material-icons.pull-xs-right,
+  .material-icons.pull-sm-right,
+  .material-icons.pull-md-right,
+  .material-icons.pull-lg-right,
+  .material-icons.pull-xl-right,
+  .material-icons ~ .material-icons:last-child {
+    padding-left: 1rem; 
+  }
+
+  .list-group-item-heading {
+  }
+
+  .list-group-item-text {
+    font-size: .875rem;
+    color: $gray;
+  }
+}
+}
