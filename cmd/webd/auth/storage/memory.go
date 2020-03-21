@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"../session"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
 )
 
 var pder = &Provider{list: list.New()}
