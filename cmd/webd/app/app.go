@@ -101,7 +101,7 @@ func GetUpdatedList(appList []*User, UserID uint64) []*User {
 
 func (appList *App) CreatePost(userID uint64, message string) {
 	currTime := time.Now()
-	newPost := &Post{appList.postID, currTime, message, userID}
+	newPost := &Post{sync.Mutex{}, appList.postID, currTime, message, userID}
 
 	appList.postsMu.Lock()
 	defer appList.postsMu.Unlock()
