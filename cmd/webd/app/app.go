@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -13,7 +14,7 @@ type User struct {
 	LastName  string
 	Email     string
 	Password  string
-	id        uint64
+	Id        uint64
 	following []*User
 	followers []*User
 	post      []*Post
@@ -38,9 +39,17 @@ type App struct {
 	postID  uint64
 }
 
+// ByTime implements sort.Interface for []Person based on
+// the Age field.
+type ByTime []*Post
+
+func (a ByTime) Len() int           { return len(a) }
+func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByTime) Less(i, j int) bool { return a[i].Timestamp.Before(a[j].Timestamp) }
+
 func (u *User) String() string {
 	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, Password: %s, id: %d, following: %d, followers: %d, posts: %d",
-		u.FirstName, u.LastName, u.Email, u.Password, u.id, len(u.following), len(u.followers), len(u.post))
+		u.FirstName, u.LastName, u.Email, u.Password, u.Id, len(u.following), len(u.followers), len(u.post))
 }
 
 func MakeApp() *App {
@@ -133,11 +142,15 @@ func (appList *App) AddUser(firstname string, lastname string, email string, pas
 	newUser := MakeUser(firstname, lastname, email, password, appList.userID)
 	appList.users[appList.userID] = newUser
 	appList.userID++
-	return newUser.id, nil
+	return newUser.Id, nil
 }
 
 func (appList *App) GetUsers() map[uint64]*User {
 	return appList.users
+}
+
+func (appList *App) GetUser(id uint64) *User {
+	return appList.users[id]
 }
 
 func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
@@ -147,5 +160,7 @@ func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
 	for _, v := range appList.users[userId].following {
 		posts = append(posts, v.post...)
 	}
+	// sort
+	sort.Sort(ByTime(posts))
 	return posts, nil
 }

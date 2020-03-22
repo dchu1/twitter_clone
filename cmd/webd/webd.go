@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/middleware"
+
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/app"
 	session "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
 	_ "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/storage"
@@ -66,11 +68,10 @@ func logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func newsfeed(w http.ResponseWriter, r *http.Request) {
-	isAuthenticated := sess.Get("authenticated").(bool)
-	if isAuthenticated {
-		//handler.APIResponse(w, r, 200, "Authorised", make(map[string]string))
-	} else {
-		handler.APIResponse(w, r, http.StatusUnauthorized, "Unauthorised user", make(map[string]string))
+	if sess == nil || sess.Get("authenticated").(bool) {
+		//handler.APIResponse(w, r, http.StatusUnauthorized, "Unauthorised user", make(map[string]string))
+		http.Error(w, "No Valid Session", http.StatusUnauthorized)
+		return
 	}
 	switch r.Method {
 	case "POST":
@@ -90,10 +91,21 @@ func newsfeed(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		for _, v := range feed {
-			fmt.Println(v.Message)
-			w.Write([]byte(fmt.Sprintln(v.Message)))
+		respPostArray := make([]handlermodels.Post, len(feed))
+		for i, v := range feed {
+			u := a.GetUser(v.UserID)
+			// construct our struct
+			a := handlermodels.Author{UserID: u.Id, Firstname: u.FirstName, Lastname: u.LastName, Email: u.Email}
+			p := handlermodels.Post{Id: v.Id, Timestamp: v.Timestamp, Message: v.Message, Author: a}
+			respPostArray[i] = p
 		}
+		respMessage := handlermodels.FeedResponse{respPostArray}
+		b, err = json.Marshal(respMessage)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		w.Header().Set("content-type", "application/json")
+		w.Write(b)
 		//handler.APIResponse(w, r, http.StatusOK, "Added successful;y", make(map[string]string))
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
@@ -114,26 +126,8 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		for _, v := range u {
 			w.Write([]byte(fmt.Sprintf("%s\n", v)))
 		}
-	case "POST":
-		reqMessage := handlermodels.CreateUserRequest{}
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		err = json.Unmarshal(b, &reqMessage)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		_, err = a.AddUser(reqMessage.Firstname, reqMessage.Lastname, reqMessage.Email, reqMessage.Password)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		handler.APIResponse(w, r, http.StatusOK, "Added successful;y", make(map[string]string))
 	default:
-		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Only GET allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -222,15 +216,17 @@ func main() {
 	cfg := config.GetConfig(".")
 	// storage := test_storage.Make()
 	// rootHandler := handlers.MakeRootHandler(storage)
+	middleware.SetAuthSession(&sess)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/signup", signup)
 	mux.HandleFunc("/logout", logout)
-	mux.HandleFunc("/home", newsfeed)
-	mux.HandleFunc("/follow/create", newsfeed)
-	mux.HandleFunc("/follow/destroy", newsfeed)
-	mux.HandleFunc("/user", userHandler)
-	mux.HandleFunc("/post", postHandler)
+	mux.Handle("/home", middleware.MiddlewareInjector(http.HandlerFunc(newsfeed), middleware.AuthMiddleware))
+	mux.Handle("/follow/create", middleware.MiddlewareInjector(http.HandlerFunc(followCreateHandler), middleware.AuthMiddleware)))
+	mux.Handle("/follow/destroy", middleware.MiddlewareInjector(http.HandlerFunc(followDestroyHandler), middleware.AuthMiddleware)))
+	mux.Handle("/user", middleware.MiddlewareInjector(http.HandlerFunc(userHandler), middleware.AuthMiddleware))
+	mux.Handle("/post", middleware.MiddlewareInjector(http.HandlerFunc(postHandler), middleware.AuthMiddleware))
 
 	a = app.MakeApp()
 	origins := []string{"http://localhost:4200"}
