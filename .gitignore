@@ -1,2 +1,22 @@
+# Binaries for nodejs
 node_modules/
 package-lock.json
+build/
+
+# Optional npm cache directory
+.npm
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Binaries for go programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
