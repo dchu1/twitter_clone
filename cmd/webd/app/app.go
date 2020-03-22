@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -21,10 +22,10 @@ type User struct {
 // Post struct containing attributes of a Post
 type Post struct {
 	mu        sync.Mutex // protects Post
-	id        uint64     // This is a unique id. Type might be different depending on how we generate unique ids.
-	timestamp time.Time  // time this post was made
-	message   string     // the text of the post
-	userID    uint64     //id of the user who wrote the post
+	Id        uint64     // This is a unique id. Type might be different depending on how we generate unique ids.
+	Timestamp time.Time  // time this post was made
+	Message   string     // the text of the post
+	UserID    uint64     //id of the user who wrote the post
 }
 
 // App struct containig master list of users and posts
@@ -35,6 +36,11 @@ type App struct {
 	posts   map[uint64]*Post
 	userID  uint64
 	postID  uint64
+}
+
+func (u *User) String() string {
+	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, Password: %s, id: %d, following: %d, followers: %d, posts: %d",
+		u.FirstName, u.LastName, u.Email, u.Password, u.id, len(u.following), len(u.followers), len(u.post))
 }
 
 func MakeApp() *App {
@@ -99,7 +105,7 @@ func GetUpdatedList(appList []*User, UserID uint64) []*User {
 	}
 } */
 
-func (appList *App) CreatePost(userID uint64, message string) {
+func (appList *App) CreatePost(userID uint64, message string) error {
 	currTime := time.Now()
 	newPost := &Post{sync.Mutex{}, appList.postID, currTime, message, userID}
 
@@ -108,21 +114,38 @@ func (appList *App) CreatePost(userID uint64, message string) {
 	appList.posts[appList.postID] = newPost
 	appList.postID++
 
+	// Temporary code
+	appList.usersMu.Lock()
+	defer appList.usersMu.Unlock()
+	appList.users[userID].post = append(appList.users[userID].post, newPost)
+
+	return nil
 }
 
 func MakeUser(firstname string, lastname string, email string, password string, id uint64) *User {
-	return &User{sync.Mutex{}, firstname, lastname, email, password, id, make([]*User, 10), make([]*User, 10), make([]*Post, 10)}
+	return &User{sync.Mutex{}, firstname, lastname, email, password, id, make([]*User, 0, 10), make([]*User, 0, 10), make([]*Post, 0, 10)}
 }
 
-func (appList *App) AddUser(firstname string, lastname string, email string, password string) {
+func (appList *App) AddUser(firstname string, lastname string, email string, password string) (uint64, error) {
 	appList.usersMu.Lock()
 	defer appList.usersMu.Unlock()
 
 	newUser := MakeUser(firstname, lastname, email, password, appList.userID)
 	appList.users[appList.userID] = newUser
 	appList.userID++
+	return newUser.id, nil
 }
 
-func (appList *App) getUsers() map[uint64]*User {
+func (appList *App) GetUsers() map[uint64]*User {
 	return appList.users
+}
+
+func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
+	// naive implementation
+	posts := make([]*Post, 0, 100)
+	posts = append(posts, appList.users[userId].post...)
+	for _, v := range appList.users[userId].following {
+		posts = append(posts, v.post...)
+	}
+	return posts, nil
 }
