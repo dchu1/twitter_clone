@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/app"
 	session "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
 	_ "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/storage"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/config"
@@ -17,6 +18,7 @@ import (
 
 var globalSessions *session.Manager
 var sess session.Session
+var a app.App
 
 func login(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -64,6 +66,10 @@ func newsfeed(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func postHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 // Then, initialize the session manager
 func init() {
 	globalSessions, _ = session.NewManager("memory", "client_sessionid", 3600)
@@ -79,6 +85,10 @@ func main() {
 	mux.HandleFunc("/signup", signup)
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/home", newsfeed)
+	mux.HandleFunc("/user/follow", newsfeed)
+	mux.HandleFunc("/user/unfollow", newsfeed)
+	mux.HandleFunc("/user", newsfeed)
+	mux.HandleFunc("/post", postHandler)
 
 	origins := []string{"http://localhost:4200"}
 	headers := []string{"Content-Type", "X-Requested-With", "Range"}
