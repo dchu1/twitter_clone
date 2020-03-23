@@ -36,7 +36,7 @@
     "jquery": "3.2.1",
     "jquery-validation": "1.17.0",
     "popper.js": "^1.14.3",
-    "rxjs": "^6.5.4",
+
     "uglify-js": "3.3.28",
     "validate": "3.0.1",
     "web-animations-js": "2.3.1",
