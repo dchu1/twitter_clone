@@ -17,10 +17,6 @@ import (
 func main() {
 	// Read config
 	cfg := config.GetConfig(".")
-	// storage := test_storage.Make()
-	// rootHandler := handlers.MakeRootHandler(storage)
-	//middleware.SetAuthSession(&sess)
-	//handlers.SetState(app.MakeApp(), globalSessions, &sess)
 	session.InitializeGlobalSessions()
 	handlers.SetState(app.MakeApp())
 
@@ -28,7 +24,7 @@ func main() {
 	mux.HandleFunc("/login", handlers.Login)
 	mux.HandleFunc("/signup", handlers.Signup)
 	mux.HandleFunc("/logout", handlers.Logout)
-	mux.Handle("/home", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Feed), middleware.AuthMiddleware))
+	mux.Handle("/feed", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Feed), middleware.AuthMiddleware))
 	mux.Handle("/follow/create", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowCreateHandler), middleware.AuthMiddleware))
 	mux.Handle("/follow/destroy", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowDestroyHandler), middleware.AuthMiddleware))
 	mux.Handle("/user", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserHandler), middleware.AuthMiddleware))

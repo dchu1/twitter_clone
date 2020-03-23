@@ -1,7 +1,7 @@
 package handlermodels
 
 type GenericResponseMessage struct {
-	Status  int
-	Message string
-	Body    map[string]string
+	Status  int               `json:",omitempty"`
+	Message string            `json:",omitempty"`
+	Body    map[string]string `json:",omitempty"`
 }

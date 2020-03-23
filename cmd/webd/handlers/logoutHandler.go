@@ -7,7 +7,10 @@ import (
 )
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	session.GlobalSessions.SessionStart(w, r).Set("authenticated", false)
-	session.GlobalSessions.SessionDestroy(w, r)
+	sess := session.GlobalSessions.SessionQuery(w, r)
+	if sess != nil {
+		sess.Set("authenticated", false)
+		session.GlobalSessions.SessionDestroy(w, r)
+	}
 	APIResponse(w, r, 200, "Logout successful", make(map[string]string))
 }

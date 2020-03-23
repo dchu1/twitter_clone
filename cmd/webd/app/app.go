@@ -9,21 +9,16 @@ import (
 
 // User struct contatining attributes of a User
 type User struct {
-	mu        sync.Mutex // protects User
-	FirstName string
-	LastName  string
-	Email     string
-	Password  string
-<<<<<<< HEAD
-	Id        uint64
-	following []*User
-	followers []*User
-=======
-	id        uint64
-	following map[uint64]uint64
-	followers map[uint64]uint64
->>>>>>> master
-	post      []*Post
+	followingRWMu sync.RWMutex // protects following map
+	followersRWMu sync.RWMutex // protects followers map
+	postsRWMu     sync.RWMutex // protects posts map
+	FirstName     string       `json:"firstname,omitempty"`
+	LastName      string       `json:"lastname,omitempty"`
+	Email         string       `json:"email,omitempty"`
+	Id            uint64       `json:"userId"`
+	following     map[uint64]uint64
+	followers     map[uint64]uint64
+	post          []*Post
 }
 
 // Post struct containing attributes of a Post
@@ -37,12 +32,16 @@ type Post struct {
 
 // App struct containig master list of users and posts
 type App struct {
-	usersMu sync.Mutex // protects users map
-	postsMu sync.Mutex // protects posts map
-	users   map[uint64]*User
-	posts   map[uint64]*Post
-	userID  uint64
-	postID  uint64
+	usersRWMu       sync.RWMutex // protects users map
+	postsRWMu       sync.RWMutex // protects posts map
+	userIDMu        sync.Mutex   // protects userID counter
+	postIDMu        sync.Mutex   // protects postID counter
+	credentialsRWMu sync.RWMutex // protects the credentials map
+	credentials     map[string]string
+	users           map[uint64]*User
+	posts           map[uint64]*Post
+	userID          uint64
+	postID          uint64
 }
 
 // ByTime implements sort.Interface for []Person based on
@@ -51,113 +50,140 @@ type ByTime []*Post
 
 func (a ByTime) Len() int           { return len(a) }
 func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByTime) Less(i, j int) bool { return a[i].Timestamp.Before(a[j].Timestamp) }
+func (a ByTime) Less(i, j int) bool { return !a[i].Timestamp.Before(a[j].Timestamp) }
 
 func (u *User) String() string {
-	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, Password: %s, id: %d, following: %d, followers: %d, posts: %d",
-		u.FirstName, u.LastName, u.Email, u.Password, u.Id, len(u.following), len(u.followers), len(u.post))
+	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, id: %d, following: %d, followers: %d, posts: %d",
+		u.FirstName, u.LastName, u.Email, u.Id, len(u.following), len(u.followers), len(u.post))
 }
 
 func MakeApp() *App {
-	return &App{sync.Mutex{}, sync.Mutex{}, make(map[uint64]*User), make(map[uint64]*Post), 0, 0}
+	return &App{sync.RWMutex{}, sync.RWMutex{}, sync.Mutex{}, sync.Mutex{}, sync.RWMutex{}, make(map[string]string), make(map[uint64]*User), make(map[uint64]*Post), 0, 0}
+}
+
+func (appList *App) generateUserId() uint64 {
+	appList.userIDMu.Lock()
+	defer appList.userIDMu.Unlock()
+	uid := appList.userID
+	appList.userID++
+	return uid
+}
+
+func (appList *App) generatePostId() uint64 {
+	appList.postIDMu.Lock()
+	defer appList.postIDMu.Unlock()
+	uid := appList.postID
+	appList.postID++
+	return uid
 }
 
 func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) {
-	appList.usersMu.Lock()
-	defer appList.usersMu.Unlock()
+	// appList.usersRWMu.Lock()
+	// defer appList.usersRWMu.Unlock()
 
-	appList.users[followingUserID].mu.Lock()
+	appList.users[followingUserID].followingRWMu.Lock()
 	//Add userID to be followed in the following list of user who wants to follow
 	followingUserIDObject := appList.users[followingUserID]
 	newfollowing := followingUserIDObject.following
 	newfollowing[UserIDToFollow] = UserIDToFollow
 	followingUserIDObject.following = newfollowing
-	appList.users[followingUserID].mu.Unlock()
+	appList.users[followingUserID].followingRWMu.Unlock()
 
-	appList.users[UserIDToFollow].mu.Lock()
+	appList.users[UserIDToFollow].followersRWMu.Lock()
 	//Add userID who is following in the followers list of the user being followed
 	UserIDToFollowObject := appList.users[UserIDToFollow]
 	newfollowers := UserIDToFollowObject.followers
 	newfollowers[followingUserID] = followingUserID
 	UserIDToFollowObject.followers = newfollowers
-	appList.users[UserIDToFollow].mu.Unlock()
+	appList.users[UserIDToFollow].followersRWMu.Unlock()
 }
 
 func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) {
-	appList.usersMu.Lock()
-	defer appList.usersMu.Unlock()
+	// appList.usersRWMu.Lock()
+	// defer appList.usersRWMu.Unlock()
 
-	appList.users[followingUserID].mu.Lock()
+	appList.users[followingUserID].followingRWMu.Lock()
 	//Remove userID to be unfollowed from the following list of the user initiating unfollow request
 	followingUserIDObject := appList.users[followingUserID]
 	newfollowing := followingUserIDObject.following
 	delete(newfollowing, UserIDToUnfollow)
 	followingUserIDObject.following = newfollowing
-	appList.users[followingUserID].mu.Unlock()
+	appList.users[followingUserID].followingRWMu.Unlock()
 
-	appList.users[UserIDToUnfollow].mu.Lock()
+	appList.users[UserIDToUnfollow].followersRWMu.Lock()
 	//Remove userID who is initiating the unfollow request from the followers list of the user being unfollowed
 	UserIDToUnfollowObject := appList.users[UserIDToUnfollow]
 	newfollowers := UserIDToUnfollowObject.followers
 	delete(newfollowers, followingUserID)
 	UserIDToUnfollowObject.followers = newfollowers
-	appList.users[UserIDToUnfollow].mu.Unlock()
+	appList.users[UserIDToUnfollow].followersRWMu.Unlock()
 }
 
 func (appList *App) CreatePost(userID uint64, message string) error {
 	currTime := time.Now()
-	newPost := &Post{sync.Mutex{}, appList.postID, currTime, message, userID}
+	postId := appList.generatePostId()
+	newPost := &Post{sync.Mutex{}, postId, currTime, message, userID}
 
-	appList.postsMu.Lock()
-	defer appList.postsMu.Unlock()
-	appList.posts[appList.postID] = newPost
-	appList.postID++
+	appList.postsRWMu.Lock()
+	appList.posts[postId] = newPost
+	appList.postsRWMu.Unlock()
 
 	// Temporary code
-	appList.usersMu.Lock()
-	defer appList.usersMu.Unlock()
+	appList.usersRWMu.Lock()
+	defer appList.usersRWMu.Unlock()
 	appList.users[userID].post = append(appList.users[userID].post, newPost)
 
 	return nil
 }
 
-func MakeUser(firstname string, lastname string, email string, password string, id uint64) *User {
-	return &User{sync.Mutex{}, firstname, lastname, email, password, id, make(map[uint64]uint64), make(map[uint64]uint64), make([]*Post, 0, 10)}
+func MakeUser(firstname string, lastname string, email string, id uint64) *User {
+	return &User{sync.RWMutex{}, sync.RWMutex{}, sync.RWMutex{}, firstname, lastname, email, id, make(map[uint64]uint64), make(map[uint64]uint64), make([]*Post, 0, 100)}
 }
 
 func (appList *App) AddUser(firstname string, lastname string, email string, password string) (uint64, error) {
-	appList.usersMu.Lock()
-	defer appList.usersMu.Unlock()
+	userId := appList.generateUserId()
+	newUser := MakeUser(firstname, lastname, email, userId)
 
-	newUser := MakeUser(firstname, lastname, email, password, appList.userID)
-	appList.users[appList.userID] = newUser
-	appList.userID++
+	appList.usersRWMu.Lock()
+	defer appList.usersRWMu.Unlock()
+	appList.users[userId] = newUser
+
+	appList.credentialsRWMu.Lock()
+	defer appList.credentialsRWMu.Unlock()
+	appList.credentials[email] = password
+
 	return newUser.Id, nil
 }
 
 func (appList *App) GetUsers() map[uint64]*User {
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
 	return appList.users
 }
 
 func (appList *App) GetUser(id uint64) *User {
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
 	return appList.users[id]
+}
+
+func (appList *App) ValidateCredentials(username string, password string) bool {
+	appList.credentialsRWMu.RLock()
+	defer appList.credentialsRWMu.RUnlock()
+	return appList.credentials[username] == password
 }
 
 func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
 	// naive implementation
 	posts := make([]*Post, 0, 100)
+
+	appList.users[userId].postsRWMu.RLock()
 	posts = append(posts, appList.users[userId].post...)
+	appList.users[userId].postsRWMu.RUnlock()
 	for _, v := range appList.users[userId].following {
 		posts = append(posts, appList.users[v].post...)
 	}
 	// sort
 	sort.Sort(ByTime(posts))
 	return posts, nil
-}
-
-// Function to strip out data for export, i.e. password, etc...
-func CleanUserData(u *User) User {
-	ret := *u
-	ret.Password = 0
-	return ret
 }

@@ -8,14 +8,14 @@ import (
 
 func TestAddUser(t *testing.T) {
 	app := MakeApp()
-	expected := MakeUser("TestFirst", "TestLast", "test@test.com", "testpass", 0)
+	expected := MakeUser("TestFirst", "TestLast", "test@test.com", 0)
 	app.AddUser("TestFirst", "TestLast", "test@test.com", "testpass")
 	actual := app.GetUsers()[0]
 	if expected.Email != actual.Email ||
 		expected.FirstName != actual.FirstName ||
 		expected.LastName != actual.LastName ||
-		expected.id != actual.id {
-		t.Error(fmt.Sprintf("Test Failed: %s, %s, %s, %d", actual.Email, actual.FirstName, actual.LastName, actual.id))
+		expected.Id != actual.Id {
+		t.Error(fmt.Sprintf("Test Failed: %s, %s, %s, %d", actual.Email, actual.FirstName, actual.LastName, actual.Id))
 	}
 }
 
@@ -23,8 +23,8 @@ func TestFollowUser(t *testing.T) {
 	app := MakeApp()
 	app.AddUser("FollowerFirst", "FollowerLast", "follower@test.com", "followerpass")
 	app.AddUser("FollowingFirst", "FollowingLast", "following@test.com", "followingpass")
-	followingUserID := app.users[0].id
-	UserIDToFollow := app.users[1].id
+	followingUserID := app.users[0].Id
+	UserIDToFollow := app.users[1].Id
 	app.FollowUser(followingUserID, UserIDToFollow)
 	if app.users[0].following[UserIDToFollow] != UserIDToFollow {
 		t.Error("Test Failed Following map not updated properly")
@@ -45,9 +45,9 @@ func TestUnFollowUser(t *testing.T) {
 	User1FollowerList := make(map[uint64]uint64)
 	User2FollowerList := map[uint64]uint64{0: 0}
 
-	User0ID := app.users[0].id
-	User1ID := app.users[1].id
-	User2ID := app.users[2].id
+	User0ID := app.users[0].Id
+	User1ID := app.users[1].Id
+	User2ID := app.users[2].Id
 	app.FollowUser(User0ID, User1ID)
 	app.FollowUser(User0ID, User2ID)
 	app.UnFollowUser(User0ID, User1ID)
@@ -66,7 +66,7 @@ func TestUnFollowUser(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	app := MakeApp()
 	app.AddUser("TestFirst", "TestLast", "Test@test.com", "Testpass")
-	userID := app.users[0].id
+	userID := app.users[0].Id
 	app.CreatePost(userID, "Test Message")
 	userPost := app.users[0].post[0]
 	appPost := app.posts[0]
@@ -86,7 +86,7 @@ func TestCreatePost(t *testing.T) {
 func TestGetFeed(t *testing.T) {
 	app := MakeApp()
 	app.AddUser("TestFirst", "TestLast", "Test@test.com", "Testpass")
-	userID := app.users[0].id
+	userID := app.users[0].Id
 	app.CreatePost(userID, "Test Message")
 	userPost := app.users[0].post[0]
 

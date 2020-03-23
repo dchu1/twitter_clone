@@ -76,6 +76,21 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 	return
 }
 
+// Similar to SessionStart, but does not create a new session if cookie does not exist
+func (manager *Manager) SessionQuery(w http.ResponseWriter, r *http.Request) (session Session) {
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
+	cookie, err := r.Cookie(manager.cookieName)
+	if err != nil {
+		// Add error handling
+	} else {
+		sid, _ := url.QueryUnescape(cookie.Value)
+		// fmt.Println("hello", sid)
+		session, _ = manager.provider.SessionRead(sid)
+	}
+	return
+}
+
 //Destroy sessionid
 func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Hiiii")
