@@ -5,25 +5,29 @@
         <div class="col-lg-4 col-md-6 col-sm-6 ml-auto mr-auto">
           <div class="heading" style="text-align:center;">
             <span style="color:purple; font-size: 35px;">
-              <b> Sign In </b>
+              <b> Log In </b>
             </span>
           </div>
           <br>
+          <p *ngIf="!isValid" style="color:red;text-align: center; ">Email/Password is incorrect</p>
           <div class="fieldBk">
             <p class="text-primary field">Email</p>
-            <input autocomplete="off" class="input" type="text" required [(ngModel)]="email" name="Email" class="form-control">
+            <input autocomplete="off" class="input" type="text" required [(ngModel)]="email" name="Email"
+              class="form-control">
           </div>
           <br>
           <div>
             <div class="fieldBk">
               <p class="text-primary field">Password</p>
-              <input autocomplete="off" class="input" type="password" required [(ngModel)]="password" name="Password" class="form-control">
+              <input autocomplete="off" class="input" type="password" required [(ngModel)]="password" name="Password"
+                class="form-control">
             </div>
           </div>
           <br>
           <div style="background:none; align-items:center">
-            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!loginForm.valid" (click)="login()">
-              Sign In
+            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!loginForm.valid"
+              (click)="login()">
+              Log In
             </button>
           </div>
           <div style="background:none; align-items:center">

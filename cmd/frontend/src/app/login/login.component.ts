@@ -12,10 +12,10 @@ import { HttpHeaders } from '@angular/common/http';
 export class LoginComponent implements OnInit {
   email: string;
   password: string;
-
+  isValid: boolean;
   constructor(private router: Router, private apiService: RestApiService) { }
 
-  ngOnInit() { }
+  ngOnInit() { this.isValid = true }
 
   login() {
 
@@ -24,7 +24,16 @@ export class LoginComponent implements OnInit {
       "Password": this.password
     }
     this.apiService.postData("login", body).subscribe((response: any) => {
-      this.router.navigate(['./home'])
+      console.log("[Response]:: ", response);
+      if (response.Status == 200) {
+        this.isValid = true
+        this.router.navigate(['./home'])
+      }
+      else {
+        this.isValid = false
+        console.log("Login unsuccessful")
+      }
+
     },
       error => {
         console.log("[Error]:: ", error);
