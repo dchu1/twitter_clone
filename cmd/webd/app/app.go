@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -141,6 +142,14 @@ func MakeUser(firstname string, lastname string, email string, id uint64) *User 
 }
 
 func (appList *App) AddUser(firstname string, lastname string, email string, password string) (uint64, error) {
+	// Check whether user already exists
+	user, _ := appList.GetUserByUsername(email)
+	if user != nil {
+		// cannot return a nil value, so need to make sure that whoever calls this function checks the error, and
+		// doesn't just use the value returned!
+		return 0, errors.New("duplicate email")
+	}
+
 	userId := appList.generateUserId()
 	newUser := MakeUser(firstname, lastname, email, userId)
 
@@ -173,15 +182,31 @@ func (appList *App) ValidateCredentials(username string, password string) bool {
 	return appList.credentials[username] == password
 }
 
+func (appList *App) GetUserByUsername(email string) (*User, error) {
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
+	for _, v := range appList.users {
+		if v.Email == email {
+			return v, nil
+		}
+	}
+	return nil, errors.New("user not found")
+}
+
 func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
 	// naive implementation
 	posts := make([]*Post, 0, 100)
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
 
 	appList.users[userId].postsRWMu.RLock()
 	posts = append(posts, appList.users[userId].post...)
 	appList.users[userId].postsRWMu.RUnlock()
+
 	for _, v := range appList.users[userId].following {
+		appList.users[v].postsRWMu.RLock()
 		posts = append(posts, appList.users[v].post...)
+		appList.users[v].postsRWMu.RUnlock()
 	}
 	// sort
 	sort.Sort(ByTime(posts))
