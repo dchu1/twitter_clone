@@ -70,7 +70,7 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 		http.SetCookie(w, &cookie)
 	} else {
 		sid, _ := url.QueryUnescape(cookie.Value)
-		// fmt.Println("hello", sid)
+
 		session, _ = manager.provider.SessionRead(sid)
 	}
 	return
@@ -93,7 +93,7 @@ func (manager *Manager) SessionQuery(w http.ResponseWriter, r *http.Request) (se
 
 //Destroy sessionid
 func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hiiii")
+
 
 	cookie, err := r.Cookie(manager.cookieName)
 	fmt.Println("cookie", cookie)
