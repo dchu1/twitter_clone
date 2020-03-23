@@ -13,12 +13,12 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		reqMessage := handlermodels.CreatePostRequest{}
-		b, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = json.Unmarshal(b, &reqMessage)
+		err = json.Unmarshal(body, &reqMessage)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -26,7 +26,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Get userId from the session cookie
 		sess := session.GlobalSessions.SessionQuery(w, r)
-		err = a.CreatePost(sess.Get("userId").(uint64), reqMessage.Message)
+		err = application.CreatePost(sess.Get("userId").(uint64), reqMessage.Message)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

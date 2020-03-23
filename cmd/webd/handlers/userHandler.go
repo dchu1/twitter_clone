@@ -12,7 +12,7 @@ import (
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
-		u := a.GetUsers()
+		u := application.GetUsers()
 		arr := make([]app.User, len(u))
 		for i, v := range u {
 			arr[i] = *v
@@ -36,7 +36,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		u := a.GetUser(reqMessage.UserID)
+		u := application.GetUser(reqMessage.UserID)
 		b, err = json.Marshal(u)
 		w.Header().Set("content-type", "application/json")
 		w.Write(b)

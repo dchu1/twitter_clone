@@ -142,6 +142,14 @@ func MakeUser(firstname string, lastname string, email string, id uint64) *User 
 }
 
 func (appList *App) AddUser(firstname string, lastname string, email string, password string) (uint64, error) {
+	// Check whether user already exists
+	user, _ := appList.GetUserByUsername(email)
+	if user != nil {
+		// cannot return a nil value, so need to make sure that whoever calls this function checks the error, and
+		// doesn't just use the value returned!
+		return 0, errors.New("duplicate email")
+	}
+
 	userId := appList.generateUserId()
 	newUser := MakeUser(firstname, lastname, email, userId)
 

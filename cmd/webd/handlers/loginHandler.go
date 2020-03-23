@@ -20,8 +20,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//code to check if user exists
-	if a.ValidateCredentials(user.Email, user.Password) {
-		user, err := a.GetUserByUsername(user.Email)
+	if application.ValidateCredentials(user.Email, user.Password) {
+		user, err := application.GetUserByUsername(user.Email)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
