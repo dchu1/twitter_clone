@@ -9,30 +9,36 @@
             </span>
           </div>
           <br>
+          <p *ngIf="!isValidUsername" style="color:red;text-align: center; ">Email Id already exits!</p>
           <div class="fieldBk">
             <p class="text-primary field">Name</p>
-            <input autocomplete="off" class="input" [(ngModel)]="name" name="name" type="text" class="form-control" required>
+            <input autocomplete="off" class="input" [(ngModel)]="name" name="name" type="text" class="form-control"
+              required>
           </div>
           <br>
           <div class="fieldBk">
             <p class="text-primary field">Last Name</p>
-            <input autocomplete="off" class="input" type="text" name="lastname" [(ngModel)]="lastname" class="form-control" required>
+            <input autocomplete="off" class="input" type="text" name="lastname" [(ngModel)]="lastname"
+              class="form-control" required>
           </div>
           <br>
           <div class="fieldBk">
             <p class="text-primary field">Email</p>
-            <input autocomplete="off" class="input" type="text" name="email" [(ngModel)]="email" class="form-control" required>
+            <input autocomplete="off" class="input" type="text" name="email" [(ngModel)]="email" class="form-control"
+              required>
           </div>
           <br>
           <div>
             <div class="fieldBk">
               <p class="text-primary field">Password</p>
-              <input autocomplete="off" class="input" [(ngModel)]="password" name="password" type="password" class="form-control" required>
+              <input autocomplete="off" class="input" [(ngModel)]="password" name="password" type="password"
+                class="form-control" required>
             </div>
           </div>
           <br>
           <div style="background:none; align-items:center">
-            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!signupForm.valid" (click)="signup()">
+            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!signupForm.valid"
+              (click)="signup()">
               Sign Up
             </button>
           </div>

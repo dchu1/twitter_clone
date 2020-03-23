@@ -12,10 +12,12 @@ export class SignupComponent implements OnInit {
   lastname: string;
   email: string;
   password: string;
+  isValidUsername: boolean;
 
   constructor(private router: Router, private apiService: RestApiService) { }
 
   ngOnInit() {
+    this.isValidUsername = true
   }
 
   signup() {
@@ -27,7 +29,14 @@ export class SignupComponent implements OnInit {
     }
     this.apiService.postData("signup", body).subscribe((response: any) => {
       console.log("[Response]:: ", response);
-      this.router.navigate(['./login']);
+       if (response.Status == 201) {
+        this.isValidUsername = true
+        this.router.navigate(['./login']);
+      }
+      else {
+        this.isValidUsername = false
+        console.log("Sign Up unsuccessful")
+      }
       // code here
     },
       error => {
