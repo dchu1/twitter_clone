@@ -20,8 +20,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//code to check if user exists
-	a.ValidateCredentials(user.Email, user.Password)
-	sess.Set("username", user.Email)
-	sess.Set("authenticated", true)
-	APIResponse(w, r, 200, "Login successful", make(map[string]string)) // send data to client side
+	if a.ValidateCredentials(user.Email, user.Password) {
+		sess.Set("username", user.Email)
+		sess.Set("authenticated", true)
+		APIResponse(w, r, http.StatusOK, "Login successful", make(map[string]string)) // send data to client side
+	} else {
+		APIResponse(w, r, http.StatusUnauthorized, "Login unsuccessful", make(map[string]string)) // send data to client side
+	}
+
 }
