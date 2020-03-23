@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var GlobalSessions *Manager
+
 type Session interface {
 	Set(key, value interface{}) error //set session value
 	Get(key interface{}) interface{}  //get session value
@@ -105,4 +107,18 @@ func (manager *Manager) sessionId() string {
 		return ""
 	}
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+// Then, initialize the session manager
+// func init() {
+//
+// }
+
+// Moved out of init() because requires that storage init() be called first, so will manually call this function in main
+func InitializeGlobalSessions() {
+	var err error
+	GlobalSessions, err = NewManager("memory", "client_sessionid", 3600)
+	if err != nil {
+		panic(err.Error())
+	}
 }

@@ -164,3 +164,10 @@ func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
 	sort.Sort(ByTime(posts))
 	return posts, nil
 }
+
+// Function to strip out data for export, i.e. password, etc...
+func CleanUserData(u *User) User {
+	ret := *u
+	ret.Password = 0
+	return ret
+}
