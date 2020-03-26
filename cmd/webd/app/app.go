@@ -117,10 +117,13 @@ func (appList *App) generatePostId() uint64 {
 	return uid
 }
 
-func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) {
+func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) error {
 	// appList.usersRWMu.Lock()
 	// defer appList.usersRWMu.Unlock()
 
+	if followingUserID == UserIDToFollow {
+		return errors.New("duplicate user ids")
+	}
 	appList.users[followingUserID].followingRWMu.Lock()
 	//Add userID to be followed in the following list of user who wants to follow
 	followingUserIDObject := appList.users[followingUserID]
@@ -136,11 +139,17 @@ func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) {
 	newfollowers[followingUserID] = followingUserID
 	UserIDToFollowObject.followers = newfollowers
 	appList.users[UserIDToFollow].followersRWMu.Unlock()
+
+	return nil
 }
 
-func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) {
+func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) error {
 	// appList.usersRWMu.Lock()
 	// defer appList.usersRWMu.Unlock()
+
+	if followingUserID == UserIDToUnfollow {
+		return errors.New("duplicate user ids")
+	}
 
 	appList.users[followingUserID].followingRWMu.Lock()
 	//Remove userID to be unfollowed from the following list of the user initiating unfollow request
@@ -157,6 +166,8 @@ func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64
 	delete(newfollowers, followingUserID)
 	UserIDToUnfollowObject.followers = newfollowers
 	appList.users[UserIDToUnfollow].followersRWMu.Unlock()
+
+	return nil
 }
 
 func (appList *App) CreatePost(userID uint64, message string) error {
@@ -215,6 +226,21 @@ func (appList *App) GetUser(id uint64) *User {
 	return appList.users[id]
 }
 
+func (appList *App) GetUserPosts(userId uint64) []Post {
+	posts := make([]Post, 0, 100)
+	appList.usersRWMu.RLock()
+	user := appList.users[userId]
+	appList.usersRWMu.RUnlock()
+
+	user.postsRWMu.RLock()
+	//posts = append(posts, appList.users[userId].post...)
+	for _, v := range user.post {
+		posts = append(posts, *v)
+	}
+	user.postsRWMu.RUnlock()
+	return posts
+}
+
 func (appList *App) ValidateCredentials(username string, password string) bool {
 	appList.credentialsRWMu.RLock()
 	defer appList.credentialsRWMu.RUnlock()
@@ -233,27 +259,23 @@ func (appList *App) GetUserByUsername(email string) (*User, error) {
 }
 
 func (appList *App) GetFeed(userId uint64) ([]Post, error) {
-	// naive implementation
 	posts := make([]Post, 0, 100)
+
+	// Get users posts
+	userPosts := appList.GetUserPosts(userId)
+	posts = append(posts, userPosts...)
+
 	appList.usersRWMu.RLock()
-	defer appList.usersRWMu.RUnlock()
+	user := appList.users[userId]
+	appList.usersRWMu.RUnlock()
 
-	appList.users[userId].postsRWMu.RLock()
-	//posts = append(posts, appList.users[userId].post...)
-	for _, v := range appList.users[userId].post {
-		posts = append(posts, *v)
+	// Get user following posts
+	user.followingRWMu.RLock()
+	for _, v := range user.following {
+		userPosts := appList.GetUserPosts(v)
+		posts = append(posts, userPosts...)
 	}
-
-	appList.users[userId].postsRWMu.RUnlock()
-
-	for _, v := range appList.users[userId].following {
-		appList.users[v].postsRWMu.RLock()
-		//posts = append(posts, appList.users[v].post...)
-		for _, v := range appList.users[userId].post {
-			posts = append(posts, *v)
-		}
-		appList.users[v].postsRWMu.RUnlock()
-	}
+	user.followingRWMu.RUnlock()
 	// sort
 	sort.Sort(ByTime(posts))
 	return posts, nil
@@ -265,9 +287,33 @@ func (appList *App) GetFollowing(userId uint64) ([]User, error) {
 	defer appList.usersRWMu.RUnlock()
 	user := appList.users[userId]
 
+	user.followingRWMu.RLock()
+	defer user.followingRWMu.RUnlock()
+
 	tempArray := make([]User, 0, 100)
-	for k := range user.following {
-		tempArray = append(tempArray, appList.users[k].Clone())
+	for userId := range user.following {
+		tempArray = append(tempArray, appList.users[userId].Clone())
+	}
+	return tempArray, nil
+}
+
+func (appList *App) GetNotFollowing(userId uint64) ([]User, error) {
+	// Get the user object from the users map
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
+	user := appList.users[userId]
+
+	user.followingRWMu.RLock()
+	defer user.followingRWMu.RUnlock()
+
+	tempArray := make([]User, 0, 100)
+	for k, v := range appList.users {
+		// check if user k exists in the user's following list. If not, add it to our
+		// temp array
+		_, exists := user.following[k]
+		if !exists && k != userId {
+			tempArray = append(tempArray, v.Clone())
+		}
 	}
 	return tempArray, nil
 }

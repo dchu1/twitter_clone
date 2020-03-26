@@ -2,7 +2,10 @@ package app
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
+	"sync"
 	"testing"
 )
 
@@ -78,7 +81,7 @@ func TestCreatePost(t *testing.T) {
 		t.Error("Test Failed User struct not updated properly for Post message ")
 	}
 	posts, _ := app.GetFeed(userID)
-	if reflect.DeepEqual(appPost, posts[0]) == false {
+	if reflect.DeepEqual(*appPost, posts[0]) == false {
 		t.Error("Test Failed Posts struct not in sync")
 	}
 }
@@ -92,7 +95,70 @@ func TestGetFeed(t *testing.T) {
 
 	posts, _ := app.GetFeed(userID)
 
-	if reflect.DeepEqual(userPost, posts[0]) == false {
+	if reflect.DeepEqual(*userPost, posts[0]) == false {
 		t.Error("Test Failed added post not returned in the list of feeds")
+	}
+}
+
+func TestConcurrentFollow(t *testing.T) {
+	var wg sync.WaitGroup
+	rand.Seed(42)
+	numUsers := 10
+	wg.Add(numUsers)
+	app := MakeApp()
+	// Create users
+	for i := 0; i < numUsers; i++ {
+		app.AddUser(strconv.Itoa(i), strconv.Itoa(i), strconv.Itoa(i), strconv.Itoa(i))
+	}
+
+	// Have them all follow each other and then make a post
+	for i := 0; i < numUsers; i++ {
+		go func(userId uint64) {
+			defer wg.Done()
+			for k := 0; k < numUsers; k++ {
+				app.FollowUser(userId, uint64(k))
+			}
+			// sleep for some random amount of time between 0 and 5 seconds
+			//time.Sleep(time.Second * time.Duration(rand.Intn(20)))
+			app.CreatePost(userId, strconv.FormatUint(userId, 10))
+		}(uint64(i))
+	}
+
+	wg.Wait()
+
+	if len(app.posts) != numUsers {
+		t.Error(fmt.Sprintf("Incorrect # of posts. Expected %d, found %d", numUsers, len(app.posts)))
+	}
+
+	// Get each users feed
+	feeds := make([][]Post, numUsers)
+	for i := 0; i < numUsers; i++ {
+		var err error
+		feeds[i], err = app.GetFeed(uint64(i))
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if len(feeds[i]) != numUsers {
+			t.Error(fmt.Sprintf("Not enough posts in user %d feed. Expected %d, found %d", i, numUsers, len(feeds[i])))
+		}
+	}
+
+	// Print out user 0 feed
+	fmt.Printf("User 0 Feed: ")
+	for i := 0; i < numUsers; i++ {
+		fmt.Printf("%s, ", feeds[0][i].Message)
+	}
+	fmt.Println()
+
+	// Check to make sure all the feeds are the same. This doesn't work since there is no way to guarantee
+	// that two posts do not have the same timestamp
+	for i := 1; i < numUsers; i++ {
+		for k := 0; k < numUsers; k++ {
+			if reflect.DeepEqual(feeds[0][k].Message, feeds[i][k].Message) == false {
+				if feeds[0][k].Timestamp.Equal(feeds[i][k].Timestamp) == false {
+					t.Error(fmt.Sprintf("User %d feed not equal to first feed. Expected %s, Found %s", i, feeds[0][k].Message, feeds[i][k].Message))
+				}
+			}
+		}
 	}
 }

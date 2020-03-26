@@ -27,6 +27,7 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 		// Get userId from the session cookie
 		sess := session.GlobalSessions.SessionQuery(w, r)
 		application.FollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
+		APIResponse(w, r, 200, "Login successful", make(map[string]string)) // send data to client side
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 	}
@@ -50,6 +51,7 @@ func FollowDestroyHandler(w http.ResponseWriter, r *http.Request) {
 		// Get userId from the session cookie
 		sess := session.GlobalSessions.SessionQuery(w, r)
 		application.UnFollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
+		APIResponse(w, r, 200, "Login successful", make(map[string]string)) // send data to client side
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return

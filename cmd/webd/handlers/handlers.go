@@ -1,3 +1,4 @@
+// Handlers package contains the handlers for serving http requests
 package handlers
 
 import (
