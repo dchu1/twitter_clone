@@ -9,6 +9,7 @@ import (
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 )
 
+// FollowCreateHandler is the Handler for following a user
 func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -31,6 +32,7 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// FollowDestroyHandler is the Handler for unfollowing a user
 func FollowDestroyHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":

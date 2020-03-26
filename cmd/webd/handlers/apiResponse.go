@@ -5,12 +5,14 @@ import (
 	"net/http"
 )
 
+// ResponseMessages is the struct for the APIResponse responses
 type ResponseMessage struct {
 	Status  int
 	Message string
 	Body    map[string]string
 }
 
+// APIResponse the function for writing a generic API response
 func APIResponse(w http.ResponseWriter, r *http.Request, status int, message string, body map[string]string) {
 	response := ResponseMessage{
 		Status:  status,

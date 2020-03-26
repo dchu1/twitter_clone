@@ -47,11 +47,50 @@ type App struct {
 
 // ByTime implements sort.Interface for []Person based on
 // the Age field.
-type ByTime []*Post
+type ByTime []Post
 
 func (a ByTime) Len() int           { return len(a) }
 func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByTime) Less(i, j int) bool { return !a[i].Timestamp.Before(a[j].Timestamp) }
+
+func (a *App) UsersMapCopy() map[uint64]User {
+	a.usersRWMu.RLock()
+	defer a.usersRWMu.RUnlock()
+	cp := make(map[uint64]User)
+	for k, v := range a.users {
+		cp[k] = v.Clone()
+	}
+	return cp
+}
+
+func (a *App) PostsMapCopy() map[uint64]Post {
+	a.postsRWMu.RLock()
+	defer a.postsRWMu.RUnlock()
+	cp := make(map[uint64]Post)
+	for k, v := range a.posts {
+		cp[k] = *v
+	}
+	return cp
+}
+
+func copyFollowMap(m map[uint64]uint64) map[uint64]uint64 {
+	cp := make(map[uint64]uint64)
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
+}
+
+func (u *User) Clone() User {
+	u.followingRWMu.RLock()
+	u.followersRWMu.RLock()
+	defer u.followingRWMu.RUnlock()
+	defer u.followersRWMu.RUnlock()
+	retUser := *u
+	retUser.following = copyFollowMap(u.following)
+	retUser.followers = copyFollowMap(u.followers)
+	return retUser
+}
 
 func (u *User) String() string {
 	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, id: %d, following: %d, followers: %d, posts: %d",
@@ -193,22 +232,42 @@ func (appList *App) GetUserByUsername(email string) (*User, error) {
 	return nil, errors.New("user not found")
 }
 
-func (appList *App) GetFeed(userId uint64) ([]*Post, error) {
+func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 	// naive implementation
-	posts := make([]*Post, 0, 100)
+	posts := make([]Post, 0, 100)
 	appList.usersRWMu.RLock()
 	defer appList.usersRWMu.RUnlock()
 
 	appList.users[userId].postsRWMu.RLock()
-	posts = append(posts, appList.users[userId].post...)
+	//posts = append(posts, appList.users[userId].post...)
+	for _, v := range appList.users[userId].post {
+		posts = append(posts, *v)
+	}
+
 	appList.users[userId].postsRWMu.RUnlock()
 
 	for _, v := range appList.users[userId].following {
 		appList.users[v].postsRWMu.RLock()
-		posts = append(posts, appList.users[v].post...)
+		//posts = append(posts, appList.users[v].post...)
+		for _, v := range appList.users[userId].post {
+			posts = append(posts, *v)
+		}
 		appList.users[v].postsRWMu.RUnlock()
 	}
 	// sort
 	sort.Sort(ByTime(posts))
 	return posts, nil
+}
+
+func (appList *App) GetFollowing(userId uint64) ([]User, error) {
+	// Get the user object from the users map
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
+	user := appList.users[userId]
+
+	tempArray := make([]User, 0, 100)
+	for k := range user.following {
+		tempArray = append(tempArray, appList.users[k].Clone())
+	}
+	return tempArray, nil
 }
