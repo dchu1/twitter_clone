@@ -24,9 +24,11 @@
           <br>
           <div class="fieldBk">
             <p class="text-primary field">Email</p>
-            <input autocomplete="off" class="input" type="text" name="email" [(ngModel)]="email" class="form-control"
-              required>
+            <input autocomplete="off" class="input" type="email" #Email="ngModel"
+              pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,3}$" required [(ngModel)]="email" name="Email"
+              class="form-control">
           </div>
+          <p style="color:red" *ngIf="Email.touched && Email.dirty && Email.invalid">Email is invalid</p>
           <br>
           <div>
             <div class="fieldBk">
@@ -37,7 +39,7 @@
           </div>
           <br>
           <div style="background:none; align-items:center">
-            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!signupForm.valid"
+            <button class="btn btn-round btnAnimate" style="float:right" [disabled]="!signupForm.valid||Email.invalid"
               (click)="signup()">
               Sign Up
             </button>
