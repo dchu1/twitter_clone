@@ -12,6 +12,8 @@ import (
 // Feed is the Handler for serving request for user's feed
 // Gets the user id from the session
 func Feed(w http.ResponseWriter, r *http.Request) {
+
+
 	switch r.Method {
 	case "GET":
 		// get the session from the cookie
@@ -39,6 +41,7 @@ func Feed(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		w.Header().Set("content-type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
 		w.Write(body)
 	default:
 		http.Error(w, "Only GET allowed", http.StatusMethodNotAllowed)
