@@ -4,7 +4,7 @@
       <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
         <p class="text-primary" style="font-size:24px; margin-top:10px; float:left">HOME</p>
         <button class="btn btn-round btnAnimate" style="float:right; box-shadow:none" (click)="logout()">
-          Sign Out
+          Log Out
         </button>
       </div>
     </div>
@@ -23,14 +23,18 @@
             <p class="text-primary" style="font-weight:400;">Today's Feed</p>
           </div>
           <div class="col-sm-6 col-xs-6 col-md-6 col-lg-6">
-            <button class="btn btn-round btnAnimate" (click)="postUpdate()" style="float:right; margin:0px; padding:5px 8px 5px 8px">Post</button>
+            <button class="btn btn-round btnAnimate" (click)="postTweet()"
+              style="float:right; margin:0px; padding:5px 8px 5px 8px">Post</button>
           </div>
         </div>
         <div class="row">
           <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
             <div class="card cardNews">
               <div *ngFor="let data of newsData">
-                {{data.news}}
+                <span>
+                  <p><b style="font-weight: 500;">{{data.author.firstname}} {{data.author.lastname}}</b>
+                    : {{data.message}} </p>
+                </span>
                 <hr>
               </div>
             </div>
@@ -47,9 +51,10 @@
                 <i class="material-icons" style="font-size:40px; float:left; margin: 7px 0px 0px 0px">
                   face
                 </i>
-                <p class="text-primary" style="float:right; margin: 15px 0px 0px 20px;">{{data.username}}</p>
+                <p class="text-primary" style="float:right; margin: 15px 0px 0px 20px;">{{data.firstName}} {{data.lastName}}</p>
               </div>
-              <button class="btn btn-round btnAnimate" [ngClass]="{'followColor': data.status == 'Follow'}" style="float:right" (click)="userStatus(i)">{{data.status}}</button>
+              <button class="btn btn-round btnAnimate" [ngClass]="{'followColor': data.status == 'Follow'}"
+                style="float:right" (click)="userStatus(i)">{{data.status}}</button>
             </span>
           </div>
         </div>
