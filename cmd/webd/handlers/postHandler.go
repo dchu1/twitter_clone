@@ -31,7 +31,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		APIResponse(w, r, http.StatusOK, "Added successful;y", make(map[string]string))
+		APIResponse(w, r, http.StatusOK, "Post added successfully", make(map[string]string))
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 	}
