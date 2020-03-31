@@ -68,7 +68,7 @@ func (a *App) PostsMapCopy() map[uint64]Post {
 	defer a.postsRWMu.RUnlock()
 	cp := make(map[uint64]Post)
 	for k, v := range a.posts {
-		cp[k] = *v
+		cp[k] = Post{sync.Mutex{}, v.Id, v.Timestamp, v.Message, v.UserID}
 	}
 	return cp
 }
