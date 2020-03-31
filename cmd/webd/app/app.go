@@ -118,54 +118,50 @@ func (appList *App) generatePostId() uint64 {
 }
 
 func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) error {
-	// appList.usersRWMu.Lock()
-	// defer appList.usersRWMu.Unlock()
 
 	if followingUserID == UserIDToFollow {
 		return errors.New("duplicate user ids")
 	}
-	appList.users[followingUserID].followingRWMu.Lock()
+
 	//Add userID to be followed in the following list of user who wants to follow
-	followingUserIDObject := appList.users[followingUserID]
+	followingUserIDObject := appList.GetUser(followingUserID)
+	followingUserIDObject.followingRWMu.Lock()
 	newfollowing := followingUserIDObject.following
 	newfollowing[UserIDToFollow] = UserIDToFollow
 	followingUserIDObject.following = newfollowing
-	appList.users[followingUserID].followingRWMu.Unlock()
+	followingUserIDObject.followingRWMu.Unlock()
 
-	appList.users[UserIDToFollow].followersRWMu.Lock()
 	//Add userID who is following in the followers list of the user being followed
-	UserIDToFollowObject := appList.users[UserIDToFollow]
+	UserIDToFollowObject := appList.GetUser(followingUserID)
+	UserIDToFollowObject.followersRWMu.Lock()
 	newfollowers := UserIDToFollowObject.followers
 	newfollowers[followingUserID] = followingUserID
 	UserIDToFollowObject.followers = newfollowers
-	appList.users[UserIDToFollow].followersRWMu.Unlock()
+	UserIDToFollowObject.followersRWMu.Unlock()
 
 	return nil
 }
 
 func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) error {
-	// appList.usersRWMu.Lock()
-	// defer appList.usersRWMu.Unlock()
-
 	if followingUserID == UserIDToUnfollow {
 		return errors.New("duplicate user ids")
 	}
 
-	appList.users[followingUserID].followingRWMu.Lock()
 	//Remove userID to be unfollowed from the following list of the user initiating unfollow request
-	followingUserIDObject := appList.users[followingUserID]
+	followingUserIDObject := appList.GetUser(followingUserID)
+	followingUserIDObject.followingRWMu.Lock()
 	newfollowing := followingUserIDObject.following
 	delete(newfollowing, UserIDToUnfollow)
 	followingUserIDObject.following = newfollowing
-	appList.users[followingUserID].followingRWMu.Unlock()
+	followingUserIDObject.followingRWMu.Unlock()
 
-	appList.users[UserIDToUnfollow].followersRWMu.Lock()
 	//Remove userID who is initiating the unfollow request from the followers list of the user being unfollowed
-	UserIDToUnfollowObject := appList.users[UserIDToUnfollow]
+	UserIDToUnfollowObject := appList.GetUser(UserIDToUnfollow)
+	UserIDToUnfollowObject.followersRWMu.Lock()
 	newfollowers := UserIDToUnfollowObject.followers
 	delete(newfollowers, followingUserID)
 	UserIDToUnfollowObject.followers = newfollowers
-	appList.users[UserIDToUnfollow].followersRWMu.Unlock()
+	UserIDToUnfollowObject.followersRWMu.Unlock()
 
 	return nil
 }
@@ -180,9 +176,10 @@ func (appList *App) CreatePost(userID uint64, message string) error {
 	appList.postsRWMu.Unlock()
 
 	// Temporary code
-	appList.usersRWMu.Lock()
-	defer appList.usersRWMu.Unlock()
+	user := appList.GetUser(userID)
+	user.postsRWMu.Lock()
 	appList.users[userID].post = append(appList.users[userID].post, newPost)
+	user.postsRWMu.Unlock()
 
 	return nil
 }
@@ -204,8 +201,8 @@ func (appList *App) AddUser(firstname string, lastname string, email string, pas
 	newUser := MakeUser(firstname, lastname, email, userId)
 
 	appList.usersRWMu.Lock()
-	defer appList.usersRWMu.Unlock()
 	appList.users[userId] = newUser
+	appList.usersRWMu.Unlock()
 
 	appList.credentialsRWMu.Lock()
 	defer appList.credentialsRWMu.Unlock()
