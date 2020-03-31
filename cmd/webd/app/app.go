@@ -132,7 +132,7 @@ func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) er
 	followingUserIDObject.followingRWMu.Unlock()
 
 	//Add userID who is following in the followers list of the user being followed
-	UserIDToFollowObject := appList.GetUser(followingUserID)
+	UserIDToFollowObject := appList.GetUser(UserIDToFollow)
 	UserIDToFollowObject.followersRWMu.Lock()
 	newfollowers := UserIDToFollowObject.followers
 	newfollowers[followingUserID] = followingUserID

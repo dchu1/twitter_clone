@@ -103,6 +103,7 @@ func TestGetFeed(t *testing.T) {
 func TestConcurrentGetUsers(t *testing.T) {
 	var wg sync.WaitGroup
 	var userlist []map[uint64]*User
+	userListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -111,6 +112,8 @@ func TestConcurrentGetUsers(t *testing.T) {
 	for user := 0; user < numUser; user++ {
 		go func(user int) {
 			defer wg.Done()
+			userListmu.Lock()
+			defer userListmu.Unlock()
 			userlist = append(userlist, app.GetUsers())
 		}(user)
 	}
@@ -126,6 +129,7 @@ func TestConcurrentGetUsers(t *testing.T) {
 func TestConcurrentGetUser(t *testing.T) {
 	var wg sync.WaitGroup
 	var userlist []*User
+	userListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -134,6 +138,8 @@ func TestConcurrentGetUser(t *testing.T) {
 	for user := 0; user < numUser; user++ {
 		go func(user int) {
 			defer wg.Done()
+			userListmu.Lock()
+			defer userListmu.Unlock()
 			userlist = append(userlist, app.GetUser(userID))
 		}(user)
 	}
@@ -149,6 +155,7 @@ func TestConcurrentGetUser(t *testing.T) {
 func TestConcurrentGetUserPosts(t *testing.T) {
 	var wg sync.WaitGroup
 	var postlist [][]Post
+	postlistmu := sync.Mutex{}
 	numPost := 100
 	wg.Add(numPost)
 	app := MakeApp()
@@ -158,6 +165,8 @@ func TestConcurrentGetUserPosts(t *testing.T) {
 	for post := 0; post < numPost; post++ {
 		go func(post int) {
 			defer wg.Done()
+			postlistmu.Lock()
+			defer postlistmu.Unlock()
 			postlist = append(postlist, app.GetUserPosts(userID))
 		}(post)
 	}
@@ -176,6 +185,7 @@ func TestConcurrentGetUserPosts(t *testing.T) {
 func TestConcurrentValidateCredentials(t *testing.T) {
 	var wg sync.WaitGroup
 	var resultList []bool
+	resultListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -186,6 +196,8 @@ func TestConcurrentValidateCredentials(t *testing.T) {
 	for user := 0; user < numUser; user++ {
 		go func(user int) {
 			defer wg.Done()
+			resultListmu.Lock()
+			defer resultListmu.Unlock()
 			resultList = append(resultList, app.ValidateCredentials(username, password))
 		}(user)
 	}
@@ -201,6 +213,7 @@ func TestConcurrentValidateCredentials(t *testing.T) {
 func TestConcurrentGetUserByUsername(t *testing.T) {
 	var wg sync.WaitGroup
 	var userList []*User
+	userListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -211,6 +224,8 @@ func TestConcurrentGetUserByUsername(t *testing.T) {
 		go func(user int) {
 			defer wg.Done()
 			userObject, _ := app.GetUserByUsername(username)
+			userListmu.Lock()
+			defer userListmu.Unlock()
 			userList = append(userList, userObject)
 		}(user)
 	}
@@ -226,6 +241,7 @@ func TestConcurrentGetUserByUsername(t *testing.T) {
 func TestConcurrentGetFollowing(t *testing.T) {
 	var wg sync.WaitGroup
 	var userList [][]User
+	userListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -241,6 +257,8 @@ func TestConcurrentGetFollowing(t *testing.T) {
 		go func(user int) {
 			defer wg.Done()
 			userObject, _ := app.GetFollowing(followingUserID)
+			userListmu.Lock()
+			defer userListmu.Unlock()
 			userList = append(userList, userObject)
 		}(user)
 	}
@@ -266,6 +284,7 @@ func TestConcurrentGetFollowing(t *testing.T) {
 func TestConcurrentGetNotFollowing(t *testing.T) {
 	var wg sync.WaitGroup
 	var userList [][]User
+	userListmu := sync.Mutex{}
 	numUser := 100
 	wg.Add(numUser)
 	app := MakeApp()
@@ -282,6 +301,8 @@ func TestConcurrentGetNotFollowing(t *testing.T) {
 		go func(user int) {
 			defer wg.Done()
 			userObject, _ := app.GetNotFollowing(followingUserID)
+			userListmu.Lock()
+			defer userListmu.Unlock()
 			userList = append(userList, userObject)
 		}(user)
 	}
@@ -307,6 +328,7 @@ func TestConcurrentGetNotFollowing(t *testing.T) {
 func TestConcurrentGetFeed(t *testing.T) {
 	var wg sync.WaitGroup
 	var postList [][]Post
+	postListmu := sync.Mutex{}
 	numPost := 100
 	wg.Add(numPost)
 	app := MakeApp()
@@ -318,6 +340,8 @@ func TestConcurrentGetFeed(t *testing.T) {
 		go func(post int) {
 			defer wg.Done()
 			postObject, _ := app.GetFeed(userID)
+			postListmu.Lock()
+			defer postListmu.Unlock()
 			postList = append(postList, postObject)
 		}(post)
 	}
@@ -414,7 +438,7 @@ func TestConcurrentAddUser(t *testing.T) {
 func TestConcurrentFollow(t *testing.T) {
 	var wg sync.WaitGroup
 	rand.Seed(42)
-	numUsers := 10
+	numUsers := 100
 	wg.Add(numUsers)
 	app := MakeApp()
 	// Create users
@@ -453,13 +477,6 @@ func TestConcurrentFollow(t *testing.T) {
 			t.Error(fmt.Sprintf("Not enough posts in user %d feed. Expected %d, found %d", i, numUsers, len(feeds[i])))
 		}
 	}
-
-	// Print out user 0 feed
-	fmt.Printf("User 0 Feed: ")
-	for i := 0; i < numUsers; i++ {
-		fmt.Printf("%s, ", feeds[0][i].Message)
-	}
-	fmt.Println()
 
 	// Check to make sure all the feeds are the same. This doesn't work since there is no way to guarantee
 	// that two posts do not have the same timestamp
