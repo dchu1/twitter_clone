@@ -12,12 +12,14 @@ import (
 // Feed is the Handler for serving request for user's feed
 // Gets the user id from the session
 func Feed(w http.ResponseWriter, r *http.Request) {
-
-
 	switch r.Method {
 	case "GET":
-		// get the session from the cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 
 		// get the user's feed
 		feed, err := application.GetFeed(sess.Get("userId").(uint64))

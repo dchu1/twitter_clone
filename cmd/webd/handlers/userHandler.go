@@ -48,9 +48,13 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET": // FOR TESTING
-		// Get userId from the session cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+	case "GET":
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 		users, err := application.GetFollowing(sess.Get("userId").(uint64))
 		respMessage := handlermodels.GetUserFollowingResponse{users}
 		body, err := json.Marshal(respMessage)
@@ -68,8 +72,12 @@ func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 func UserNotFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
-		// Get userId from the session cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 		users, err := application.GetNotFollowing(sess.Get("userId").(uint64))
 		respMessage := handlermodels.GetUserFollowingResponse{users}
 		body, err := json.Marshal(respMessage)

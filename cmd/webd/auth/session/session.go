@@ -1,6 +1,7 @@
 package session
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -12,6 +13,10 @@ import (
 )
 
 var GlobalSessions *Manager
+
+type key int
+
+const sessionKey key = 0
 
 type Session interface {
 	Set(key, value interface{}) error //set session value
@@ -77,23 +82,35 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 }
 
 // Similar to SessionStart, but does not create a new session if cookie does not exist
-func (manager *Manager) SessionQuery(w http.ResponseWriter, r *http.Request) (session Session) {
+// Adds the session to the request's context
+func (manager *Manager) SessionQuery(r *http.Request) (session Session, err error) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 	cookie, err := r.Cookie(manager.cookieName)
 	if err != nil {
-		// Add error handling
-	} else {
-		sid, _ := url.QueryUnescape(cookie.Value)
-		// fmt.Println("hello", sid)
-		session, _ = manager.provider.SessionRead(sid)
+		return
+	}
+	sid, _ := url.QueryUnescape(cookie.Value)
+	session, err = manager.provider.SessionRead(sid)
+	if err != nil {
+		return
 	}
 	return
 }
 
+func NewContext(ctx context.Context, session Session) context.Context {
+	return context.WithValue(ctx, sessionKey, session)
+}
+
+func FromContext(ctx context.Context) (Session, bool) {
+	// ctx.Value returns nil if ctx has no value for the key;
+	// the Session type assertion returns ok=false for nil.
+	sess, ok := ctx.Value(sessionKey).(Session)
+	return sess, ok
+}
+
 //Destroy sessionid
 func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
-
 
 	cookie, err := r.Cookie(manager.cookieName)
 	fmt.Println("cookie", cookie)

@@ -24,8 +24,12 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// Get userId from the session cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 		application.FollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
 		APIResponse(w, r, 200, "User followed", make(map[string]string)) // send data to client side
 	default:
@@ -48,8 +52,12 @@ func FollowDestroyHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// Get userId from the session cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 		application.UnFollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
 		APIResponse(w, r, 200, "User unfollowed", make(map[string]string)) // send data to client side
 	default:

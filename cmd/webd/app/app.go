@@ -86,10 +86,10 @@ func (u *User) Clone() User {
 	u.followersRWMu.RLock()
 	defer u.followingRWMu.RUnlock()
 	defer u.followersRWMu.RUnlock()
-	retUser := *u
+	retUser := MakeUser(u.FirstName, u.LastName, u.Email, u.Id)
 	retUser.following = copyFollowMap(u.following)
 	retUser.followers = copyFollowMap(u.followers)
-	return retUser
+	return *retUser
 }
 
 func (u *User) String() string {
@@ -262,9 +262,7 @@ func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 	userPosts := appList.GetUserPosts(userId)
 	posts = append(posts, userPosts...)
 
-	appList.usersRWMu.RLock()
-	user := appList.users[userId]
-	appList.usersRWMu.RUnlock()
+	user := appList.GetUser(userId)
 
 	// Get user following posts
 	user.followingRWMu.RLock()
@@ -280,16 +278,14 @@ func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 
 func (appList *App) GetFollowing(userId uint64) ([]User, error) {
 	// Get the user object from the users map
-	appList.usersRWMu.RLock()
-	defer appList.usersRWMu.RUnlock()
-	user := appList.users[userId]
+	user := appList.GetUser(userId)
 
 	user.followingRWMu.RLock()
 	defer user.followingRWMu.RUnlock()
 
 	tempArray := make([]User, 0, 100)
-	for userId := range user.following {
-		tempArray = append(tempArray, appList.users[userId].Clone())
+	for followerId := range user.following {
+		tempArray = append(tempArray, appList.GetUser(followerId).Clone())
 	}
 	return tempArray, nil
 }

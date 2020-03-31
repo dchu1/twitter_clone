@@ -24,8 +24,12 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Get userId from the session cookie
-		sess := session.GlobalSessions.SessionQuery(w, r)
+		// Get the session from the context
+		sess, ok := session.FromContext(r.Context())
+		if !ok {
+			http.Error(w, "Context has no session", http.StatusInternalServerError)
+			return
+		}
 		err = application.CreatePost(sess.Get("userId").(uint64), reqMessage.Message)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
