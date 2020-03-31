@@ -100,6 +100,317 @@ func TestGetFeed(t *testing.T) {
 	}
 }
 
+func TestConcurrentGetUsers(t *testing.T) {
+	var wg sync.WaitGroup
+	var userlist []map[uint64]*User
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			userlist = append(userlist, app.GetUsers())
+		}(user)
+	}
+	wg.Wait()
+	for _, user := range userlist {
+		if reflect.DeepEqual(app.users, user) == false {
+			t.Error("Error getting users")
+		}
+	}
+
+}
+
+func TestConcurrentGetUser(t *testing.T) {
+	var wg sync.WaitGroup
+	var userlist []*User
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+	userID := app.users[0].Id
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			userlist = append(userlist, app.GetUser(userID))
+		}(user)
+	}
+	wg.Wait()
+	for _, user := range userlist {
+		if reflect.DeepEqual(app.users[0], user) == false {
+			t.Error("Error getting user")
+		}
+	}
+
+}
+
+func TestConcurrentGetUserPosts(t *testing.T) {
+	var wg sync.WaitGroup
+	var postlist [][]Post
+	numPost := 100
+	wg.Add(numPost)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+	userID := app.users[0].Id
+	app.CreatePost(userID, "TestMessage")
+	for post := 0; post < numPost; post++ {
+		go func(post int) {
+			defer wg.Done()
+			postlist = append(postlist, app.GetUserPosts(userID))
+		}(post)
+	}
+	wg.Wait()
+	for _, post := range postlist {
+		if post[0].Message != "TestMessage" {
+			t.Error("Incorrect message for the post")
+		}
+		if post[0].UserID != userID {
+			t.Error("Incorrect userID for the post")
+		}
+	}
+
+}
+
+func TestConcurrentValidateCredentials(t *testing.T) {
+	var wg sync.WaitGroup
+	var resultList []bool
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+	username := app.users[0].Email
+	password := app.credentials[username]
+
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			resultList = append(resultList, app.ValidateCredentials(username, password))
+		}(user)
+	}
+	wg.Wait()
+	for _, result := range resultList {
+		if result != true {
+			t.Error("Error validating user credentials")
+		}
+	}
+
+}
+
+func TestConcurrentGetUserByUsername(t *testing.T) {
+	var wg sync.WaitGroup
+	var userList []*User
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+	username := app.users[0].Email
+
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			userObject, _ := app.GetUserByUsername(username)
+			userList = append(userList, userObject)
+		}(user)
+	}
+	wg.Wait()
+	for _, user := range userList {
+		if reflect.DeepEqual(app.users[0], user) != true {
+			t.Error("Error retreiving user given the email")
+		}
+	}
+
+}
+
+func TestConcurrentGetFollowing(t *testing.T) {
+	var wg sync.WaitGroup
+	var userList [][]User
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName1", "TestLastName1", "TestEmail1", "TestPassword1")
+	app.AddUser("TestFirstName2", "TestLastName2", "TestEmail2", "TestPassword2")
+
+	followingUserID := app.users[0].Id
+	UserIDToFollow := app.users[1].Id
+
+	app.FollowUser(followingUserID, UserIDToFollow)
+
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			userObject, _ := app.GetFollowing(followingUserID)
+			userList = append(userList, userObject)
+		}(user)
+	}
+	wg.Wait()
+	appUserObject := app.users[1]
+	for _, user := range userList {
+		if user[0].Id != UserIDToFollow {
+			t.Error("Incorrect user ID of the user which is being followed")
+		}
+		if user[0].FirstName != appUserObject.FirstName {
+			t.Error("Incorrect First Name of the user which is being followed")
+		}
+		if user[0].LastName != appUserObject.LastName {
+			t.Error("Incorrect Last Name of the user which is being followed")
+		}
+		if user[0].Email != appUserObject.Email {
+			t.Error("Incorrect Email of the user which is being followed")
+		}
+	}
+
+}
+
+func TestConcurrentGetNotFollowing(t *testing.T) {
+	var wg sync.WaitGroup
+	var userList [][]User
+	numUser := 100
+	wg.Add(numUser)
+	app := MakeApp()
+	app.AddUser("TestFirstName1", "TestLastName1", "TestEmail1", "TestPassword1")
+	app.AddUser("TestFirstName2", "TestLastName2", "TestEmail2", "TestPassword2")
+	app.AddUser("TestFirstName3", "TestLastName3", "TestEmail3", "TestPassword3")
+
+	followingUserID := app.users[0].Id
+	UserIDToFollow := app.users[1].Id
+
+	app.FollowUser(followingUserID, UserIDToFollow)
+
+	for user := 0; user < numUser; user++ {
+		go func(user int) {
+			defer wg.Done()
+			userObject, _ := app.GetNotFollowing(followingUserID)
+			userList = append(userList, userObject)
+		}(user)
+	}
+	wg.Wait()
+	appUserObject := app.users[2]
+	for _, user := range userList {
+		if user[0].Id != appUserObject.Id {
+			t.Error("Incorrect user ID of the user which is not being followed")
+		}
+		if user[0].FirstName != appUserObject.FirstName {
+			t.Error("Incorrect First Name of the user which is not being followed")
+		}
+		if user[0].LastName != appUserObject.LastName {
+			t.Error("Incorrect Last Name of the user which is not being followed")
+		}
+		if user[0].Email != appUserObject.Email {
+			t.Error("Incorrect Email of the user which is not being followed")
+		}
+	}
+
+}
+
+func TestConcurrentGetFeed(t *testing.T) {
+	var wg sync.WaitGroup
+	var postList [][]Post
+	numPost := 100
+	wg.Add(numPost)
+	app := MakeApp()
+	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+	userID := app.users[0].Id
+	app.CreatePost(userID, "TestMessage")
+
+	for post := 0; post < numPost; post++ {
+		go func(post int) {
+			defer wg.Done()
+			postObject, _ := app.GetFeed(userID)
+			postList = append(postList, postObject)
+		}(post)
+	}
+	wg.Wait()
+	for _, post := range postList {
+		if post[0].Message != "TestMessage" {
+			t.Error("Retreive feed has incorrect message value")
+		}
+		if post[0].UserID != userID {
+			t.Error("Retreive feed has incorrect userID")
+		}
+	}
+
+}
+
+func TestConcurrentGenerateUserId(t *testing.T) {
+	var wg sync.WaitGroup
+	numUsers := 100
+	wg.Add(numUsers)
+	app := MakeApp()
+	for i := 0; i < numUsers; i++ {
+		go func() {
+			defer wg.Done()
+			app.generateUserId()
+		}()
+	}
+	wg.Wait()
+	if app.userID != 100 {
+		t.Error("user ID value not updated correctly in the App struct")
+	}
+}
+
+func TestConcurrentGeneratePostId(t *testing.T) {
+	var wg sync.WaitGroup
+	numPosts := 100
+	wg.Add(numPosts)
+	app := MakeApp()
+	for i := 0; i < numPosts; i++ {
+		go func() {
+			defer wg.Done()
+			app.generatePostId()
+		}()
+	}
+	wg.Wait()
+	if app.postID != 100 {
+		t.Error("post ID value not updated correctly in the App struct")
+	}
+}
+
+func TestConcurrentCreatePost(t *testing.T) {
+	var wg sync.WaitGroup
+	numPosts := 100
+	wg.Add(numPosts)
+	app := MakeApp()
+	app.AddUser("TestFirst", "TestLast", "Test@test.com", "Testpass")
+	userID := app.users[0].Id
+	for post := 0; post < numPosts; post++ {
+		go func(post int) {
+			defer wg.Done()
+			message := "TestMessage " + strconv.Itoa(post)
+			app.CreatePost(userID, message)
+		}(post)
+	}
+	wg.Wait()
+	if len(app.posts) != 100 {
+		t.Error("Not all posts added to the app struct posts map")
+	}
+	if app.postID != 100 {
+		t.Error("post ID value not updated in the App struct")
+	}
+}
+
+func TestConcurrentAddUser(t *testing.T) {
+	var wg sync.WaitGroup
+	numUsers := 100
+	wg.Add(numUsers)
+	app := MakeApp()
+	for user := 0; user < numUsers; user++ {
+		go func(user int) {
+			defer wg.Done()
+			firstName := "TestFirstName" + strconv.Itoa(user)
+			lastName := "TestLastName" + strconv.Itoa(user)
+			email := "TestEmail" + strconv.Itoa(user)
+			password := "TestPassword" + strconv.Itoa(user)
+			app.AddUser(firstName, lastName, email, password)
+		}(user)
+	}
+	wg.Wait()
+	if len(app.users) != 100 {
+		t.Error("All users not added in the struct")
+	}
+}
+
 func TestConcurrentFollow(t *testing.T) {
 	var wg sync.WaitGroup
 	rand.Seed(42)
@@ -159,6 +470,45 @@ func TestConcurrentFollow(t *testing.T) {
 					t.Error(fmt.Sprintf("User %d feed not equal to first feed. Expected %s, Found %s", i, feeds[0][k].Message, feeds[i][k].Message))
 				}
 			}
+		}
+	}
+}
+
+func TestConcurrentUnfollowUser(t *testing.T) {
+	var wg sync.WaitGroup
+	actualFollowing := make(map[uint64]uint64)
+	numUsers := 100
+	wg.Add(numUsers)
+	app := MakeApp()
+	// Create users
+	for user := 0; user < numUsers; user++ {
+		app.AddUser("TestFirstName"+strconv.Itoa(user), "TestLastName"+strconv.Itoa(user), "TestEmail"+strconv.Itoa(user), "TestPassword"+strconv.Itoa(user))
+	}
+
+	for followingUserID := 0; followingUserID < numUsers; followingUserID++ {
+		for UserIDToFollow := 0; UserIDToFollow < numUsers; UserIDToFollow++ {
+			app.FollowUser(uint64(followingUserID), uint64(UserIDToFollow))
+		}
+	}
+
+	for user := 0; user < numUsers; user++ {
+		if len(app.users[uint64(user)].following) != 99 {
+			t.Error("Incorrect following list for user" + strconv.Itoa(user))
+		}
+	}
+
+	for followingUserID := 0; followingUserID < numUsers; followingUserID++ {
+		go func(followingUserID int) {
+			defer wg.Done()
+			for UserIDToUnfollow := 0; UserIDToUnfollow < numUsers; UserIDToUnfollow++ {
+				app.UnFollowUser(uint64(followingUserID), uint64(UserIDToUnfollow))
+			}
+		}(followingUserID)
+	}
+	wg.Wait()
+	for _, userObject := range app.users {
+		if reflect.DeepEqual(userObject.following, actualFollowing) == false {
+			t.Error("Unsuccessful Unfollow operation ")
 		}
 	}
 }
