@@ -16,8 +16,6 @@ export class DashboardComponent implements OnInit {
   constructor(private router: Router, private apiService: RestApiService) { }
 
   ngOnInit() {
-    // this.newsData = [{ news: "News 1" }, { news: "News 2" }, { news: "News 3" }, { news: "News 4" }];
-    // this.usersData = [{ username: "User 1", status: "Follow" }, { username: "User 2", status: "Follow" }, { username: "User 3", status: "Follow" }, { username: "User 4", status: "Follow" }];
 
     this.getNewsFeed();
     this.getUserList();
@@ -127,37 +125,3 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  /**Use this inside a function
-   * login(){
-   * api call given below
-   * }
-    * Example of Get api
-    *
-    this.apiService.getData("newsFeed").subscribe((response: any) => {
-      console.log("[Response]:: ", response);
-        perform any line of code here
-        ex: this.router.navigate(['./login']);
-    },
-      error => {
-        console.log("[Error]:: ", error)
-      });
-  }
-  */
-
-  /**
-    * Function of Post api
-    *
-    let body = {
-      "email": "test user",
-      "password": "sajhdg"
-    }
-    this.apiService.postData("login", body).subscribe((response: any) => {
-      console.log("[Response]:: ", response);
-        code here
-    },
-      error => {
-        console.log("[Error]:: ", error);
-      });
-  }
-  */
-}
