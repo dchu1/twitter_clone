@@ -28,9 +28,6 @@ func APIResponse(w http.ResponseWriter, r *http.Request, status int, message str
 
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-	// w.Header().Set("Access-Control-Allow-Credentials", "true")
-	// w.Header().Set("Access-Control-Allow-Headers", "Accept, Accept-Endcoding, Content-Type, Content-Length, Authorization, X-CSRF-token")
-	// w.Header().Set("Access-Control-Expose-Headers", "Set-Cookie")
 
 	w.Write(res)
 }

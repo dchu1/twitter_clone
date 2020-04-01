@@ -28,8 +28,7 @@ type logEntry struct {
 
 func LoggerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//start := time.Now()
+
 		next.ServeHTTP(w, r)
-		//latency := time.Since(start)
 	})
 }

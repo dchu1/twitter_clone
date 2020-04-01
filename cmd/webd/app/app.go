@@ -230,7 +230,6 @@ func (appList *App) GetUserPosts(userId uint64) []Post {
 	appList.usersRWMu.RUnlock()
 
 	user.postsRWMu.RLock()
-	//posts = append(posts, appList.users[userId].post...)
 	for _, v := range user.post {
 		posts = append(posts, *v)
 	}

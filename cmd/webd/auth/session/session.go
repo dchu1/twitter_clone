@@ -141,10 +141,6 @@ func (manager *Manager) sessionId() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-// Then, initialize the session manager
-// func init() {
-//
-// }
 
 // Moved out of init() because requires that storage init() be called first, so will manually call this function in main
 func InitializeGlobalSessions() {
