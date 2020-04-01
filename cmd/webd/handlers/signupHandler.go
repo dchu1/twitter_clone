@@ -8,6 +8,7 @@ import (
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 )
 
+// Signup is the handler for /signup. It is used for creating new users.
 func Signup(w http.ResponseWriter, r *http.Request) {
 	reqMessage := handlermodels.CreateUserRequest{}
 	b, err := ioutil.ReadAll(r.Body)

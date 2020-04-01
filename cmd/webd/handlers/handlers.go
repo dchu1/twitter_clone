@@ -1,4 +1,4 @@
-// Handlers package contains the handlers for serving http requests
+// Package handlers package contains the handlers for serving http requests
 package handlers
 
 import (
@@ -7,6 +7,7 @@ import (
 
 var application *app.App
 
+// SetState sets the package level app.App
 func SetState(app *app.App) {
 	application = app
 }

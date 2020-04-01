@@ -53,26 +53,29 @@ func (a ByTime) Len() int           { return len(a) }
 func (a ByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByTime) Less(i, j int) bool { return !a[i].Timestamp.Before(a[j].Timestamp) }
 
-func (a *App) UsersMapCopy() map[uint64]User {
-	a.usersRWMu.RLock()
-	defer a.usersRWMu.RUnlock()
+// UsersMapCopy creates a deep copy of the users map.
+func (appList *App) UsersMapCopy() map[uint64]User {
+	appList.usersRWMu.RLock()
+	defer appList.usersRWMu.RUnlock()
 	cp := make(map[uint64]User)
-	for k, v := range a.users {
+	for k, v := range appList.users {
 		cp[k] = v.Clone()
 	}
 	return cp
 }
 
-func (a *App) PostsMapCopy() map[uint64]Post {
-	a.postsRWMu.RLock()
-	defer a.postsRWMu.RUnlock()
+// PostsMapCopy creates a deep copy of the posts map
+func (appList *App) PostsMapCopy() map[uint64]Post {
+	appList.postsRWMu.RLock()
+	defer appList.postsRWMu.RUnlock()
 	cp := make(map[uint64]Post)
-	for k, v := range a.posts {
+	for k, v := range appList.posts {
 		cp[k] = Post{sync.Mutex{}, v.Id, v.Timestamp, v.Message, v.UserID}
 	}
 	return cp
 }
 
+// copyFollowMap makes a deep copy of a user's following or followed map
 func copyFollowMap(m map[uint64]uint64) map[uint64]uint64 {
 	cp := make(map[uint64]uint64)
 	for k, v := range m {
@@ -81,6 +84,7 @@ func copyFollowMap(m map[uint64]uint64) map[uint64]uint64 {
 	return cp
 }
 
+// Clone creates a deep copy of a User object
 func (u *User) Clone() User {
 	u.followingRWMu.RLock()
 	u.followersRWMu.RLock()
@@ -92,15 +96,18 @@ func (u *User) Clone() User {
 	return *retUser
 }
 
+// String is the toString() method for a user
 func (u *User) String() string {
 	return fmt.Sprintf("FirstName: %s, LastName: %s, Email: %s, id: %d, following: %d, followers: %d, posts: %d",
 		u.FirstName, u.LastName, u.Email, u.Id, len(u.following), len(u.followers), len(u.post))
 }
 
+// MakeApp creates an instsance of an App
 func MakeApp() *App {
 	return &App{sync.RWMutex{}, sync.RWMutex{}, sync.Mutex{}, sync.Mutex{}, sync.RWMutex{}, make(map[string]string), make(map[uint64]*User), make(map[uint64]*Post), 0, 0}
 }
 
+// generateUserId gets a value from the userId counter, then increments the counter
 func (appList *App) generateUserId() uint64 {
 	appList.userIDMu.Lock()
 	defer appList.userIDMu.Unlock()
@@ -109,6 +116,7 @@ func (appList *App) generateUserId() uint64 {
 	return uid
 }
 
+// generatePostId gets a value from the postId counter, then increments the counter
 func (appList *App) generatePostId() uint64 {
 	appList.postIDMu.Lock()
 	defer appList.postIDMu.Unlock()
@@ -117,6 +125,8 @@ func (appList *App) generatePostId() uint64 {
 	return uid
 }
 
+// FollowUser updates the following user's following map, and the followed user's followers map
+// to reflect that a user is following another user
 func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) error {
 
 	if followingUserID == UserIDToFollow {
@@ -124,7 +134,7 @@ func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) er
 	}
 
 	//Add userID to be followed in the following list of user who wants to follow
-	followingUserIDObject := appList.GetUser(followingUserID)
+	followingUserIDObject := appList.getUser(followingUserID)
 	followingUserIDObject.followingRWMu.Lock()
 	newfollowing := followingUserIDObject.following
 	newfollowing[UserIDToFollow] = UserIDToFollow
@@ -132,7 +142,7 @@ func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) er
 	followingUserIDObject.followingRWMu.Unlock()
 
 	//Add userID who is following in the followers list of the user being followed
-	UserIDToFollowObject := appList.GetUser(UserIDToFollow)
+	UserIDToFollowObject := appList.getUser(UserIDToFollow)
 	UserIDToFollowObject.followersRWMu.Lock()
 	newfollowers := UserIDToFollowObject.followers
 	newfollowers[followingUserID] = followingUserID
@@ -142,13 +152,15 @@ func (appList *App) FollowUser(followingUserID uint64, UserIDToFollow uint64) er
 	return nil
 }
 
+// UnFollowUser updates the following user's following map, and the followed user's followers map
+// to reflect that a user has unfollowed another user
 func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) error {
 	if followingUserID == UserIDToUnfollow {
 		return errors.New("duplicate user ids")
 	}
 
 	//Remove userID to be unfollowed from the following list of the user initiating unfollow request
-	followingUserIDObject := appList.GetUser(followingUserID)
+	followingUserIDObject := appList.getUser(followingUserID)
 	followingUserIDObject.followingRWMu.Lock()
 	newfollowing := followingUserIDObject.following
 	delete(newfollowing, UserIDToUnfollow)
@@ -156,7 +168,7 @@ func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64
 	followingUserIDObject.followingRWMu.Unlock()
 
 	//Remove userID who is initiating the unfollow request from the followers list of the user being unfollowed
-	UserIDToUnfollowObject := appList.GetUser(UserIDToUnfollow)
+	UserIDToUnfollowObject := appList.getUser(UserIDToUnfollow)
 	UserIDToUnfollowObject.followersRWMu.Lock()
 	newfollowers := UserIDToUnfollowObject.followers
 	delete(newfollowers, followingUserID)
@@ -166,6 +178,8 @@ func (appList *App) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64
 	return nil
 }
 
+// CreatePost creates a post object and appends it to the appropriate
+// data structures
 func (appList *App) CreatePost(userID uint64, message string) error {
 	currTime := time.Now()
 	postId := appList.generatePostId()
@@ -175,8 +189,7 @@ func (appList *App) CreatePost(userID uint64, message string) error {
 	appList.posts[postId] = newPost
 	appList.postsRWMu.Unlock()
 
-	// Temporary code
-	user := appList.GetUser(userID)
+	user := appList.getUser(userID)
 	user.postsRWMu.Lock()
 	appList.users[userID].post = append(appList.users[userID].post, newPost)
 	user.postsRWMu.Unlock()
@@ -184,10 +197,12 @@ func (appList *App) CreatePost(userID uint64, message string) error {
 	return nil
 }
 
+// MakeUser returns a user object
 func MakeUser(firstname string, lastname string, email string, id uint64) *User {
 	return &User{sync.RWMutex{}, sync.RWMutex{}, sync.RWMutex{}, firstname, lastname, email, id, make(map[uint64]uint64), make(map[uint64]uint64), make([]*Post, 0, 100)}
 }
 
+// AddUser adds a user to the appropriate data structures
 func (appList *App) AddUser(firstname string, lastname string, email string, password string) (uint64, error) {
 	// Check whether user already exists
 	user, _ := appList.GetUserByUsername(email)
@@ -211,23 +226,28 @@ func (appList *App) AddUser(firstname string, lastname string, email string, pas
 	return newUser.Id, nil
 }
 
+// GetUsers returns a list of all users
 func (appList *App) GetUsers() map[uint64]*User {
 	appList.usersRWMu.RLock()
 	defer appList.usersRWMu.RUnlock()
-	return appList.users
+	newMap := make(map[uint64]*User)
+	for k, v := range appList.users {
+		clone := v.Clone()
+		newMap[k] = &clone
+	}
+	return newMap
 }
 
-func (appList *App) GetUser(id uint64) *User {
+func (appList *App) getUser(id uint64) *User {
 	appList.usersRWMu.RLock()
 	defer appList.usersRWMu.RUnlock()
 	return appList.users[id]
 }
 
+// GetUserPosts returns a list of all the posts by a user.
 func (appList *App) GetUserPosts(userId uint64) []Post {
 	posts := make([]Post, 0, 100)
-	appList.usersRWMu.RLock()
-	user := appList.users[userId]
-	appList.usersRWMu.RUnlock()
+	user := appList.getUser(userId)
 
 	user.postsRWMu.RLock()
 	for _, v := range user.post {
@@ -237,12 +257,15 @@ func (appList *App) GetUserPosts(userId uint64) []Post {
 	return posts
 }
 
+// ValidateCredentials checks whether the given username and password match
+// those stored in the credentials map
 func (appList *App) ValidateCredentials(username string, password string) bool {
 	appList.credentialsRWMu.RLock()
 	defer appList.credentialsRWMu.RUnlock()
 	return appList.credentials[username] == password
 }
 
+// GetUserByUsername returns a user object by their username
 func (appList *App) GetUserByUsername(email string) (*User, error) {
 	appList.usersRWMu.RLock()
 	defer appList.usersRWMu.RUnlock()
@@ -254,6 +277,7 @@ func (appList *App) GetUserByUsername(email string) (*User, error) {
 	return nil, errors.New("user not found")
 }
 
+// GetFeed returns an array of Posts that represent a given user's feed
 func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 	posts := make([]Post, 0, 100)
 
@@ -261,7 +285,7 @@ func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 	userPosts := appList.GetUserPosts(userId)
 	posts = append(posts, userPosts...)
 
-	user := appList.GetUser(userId)
+	user := appList.getUser(userId)
 
 	// Get user following posts
 	user.followingRWMu.RLock()
@@ -275,20 +299,22 @@ func (appList *App) GetFeed(userId uint64) ([]Post, error) {
 	return posts, nil
 }
 
+// GetFollowing returns an array of users that the given user is following
 func (appList *App) GetFollowing(userId uint64) ([]User, error) {
 	// Get the user object from the users map
-	user := appList.GetUser(userId)
+	user := appList.getUser(userId)
 
 	user.followingRWMu.RLock()
 	defer user.followingRWMu.RUnlock()
 
 	tempArray := make([]User, 0, 100)
 	for followerId := range user.following {
-		tempArray = append(tempArray, appList.GetUser(followerId).Clone())
+		tempArray = append(tempArray, appList.getUser(followerId).Clone())
 	}
 	return tempArray, nil
 }
 
+// GetNotFollowing returns an array of users that the given user is not following
 func (appList *App) GetNotFollowing(userId uint64) ([]User, error) {
 	// Get the user object from the users map
 	appList.usersRWMu.RLock()

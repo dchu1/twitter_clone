@@ -10,6 +10,7 @@ import (
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 )
 
+// Login is the handler for /login
 func Login(w http.ResponseWriter, r *http.Request) {
 	var user handlermodels.LoginRequest
 	body, err := ioutil.ReadAll(r.Body)

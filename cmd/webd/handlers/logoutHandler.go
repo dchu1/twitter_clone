@@ -6,6 +6,7 @@ import (
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
 )
 
+// Logout is the handler for /logout
 func Logout(w http.ResponseWriter, r *http.Request) {
 	// Get the session from the context
 	sess, _ := session.FromContext(r.Context())

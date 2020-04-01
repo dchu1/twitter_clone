@@ -10,6 +10,7 @@ import (
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 )
 
+// UserHandler is the handler for /users. It is for getting a list of all users, or a specific user.
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
@@ -46,6 +47,8 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UserFollowingHandler is the handler for /user/following. It is used for getting a list of users
+// the current user is following
 func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
@@ -69,6 +72,8 @@ func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UserNotFollowingHandler is the handler for /user/notfollowing. It is used for getting a list of users
+// the current user is not following
 func UserNotFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING

@@ -140,7 +140,7 @@ func TestConcurrentGetUser(t *testing.T) {
 			defer wg.Done()
 			userListmu.Lock()
 			defer userListmu.Unlock()
-			userlist = append(userlist, app.GetUser(userID))
+			userlist = append(userlist, app.getUser(userID))
 		}(user)
 	}
 	wg.Wait()

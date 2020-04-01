@@ -30,9 +30,9 @@ github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project
 ├───cmd             # Application code
 │   │   webd.go         # Main file that runs the backend server
 │   │   config.toml     # Configuration file
-│   ├───frontend        # Front end application
-│   └───webd            # Backend Application
-│       ├───app             # Package for manipulating our data structures
+│   ├───frontend        # Frontend Application code
+│   └───webd            # Backend Application code
+│       ├───app             # Package for manipulating our data structures.
 │       ├───auth            # Package for managing sessions
 │       │   ├───session
 │       │   └───storage

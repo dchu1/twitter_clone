@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// ResponseMessages is the struct for the APIResponse responses
+// ResponseMessage is the struct for the APIResponse responses
 type ResponseMessage struct {
 	Status  int
 	Message string

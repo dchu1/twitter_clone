@@ -9,6 +9,7 @@ import (
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 )
 
+// PostHandler is the handler for /post. It is used to create posts
 func PostHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
