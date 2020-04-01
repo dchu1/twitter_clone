@@ -17,12 +17,15 @@ Configure backend url in cmd/frontend/src/environment
 ### Run
     ng serve
 
+The frontend will listen on port 4200 by default.
+
 # Running the backend
     cd cmd/webd
     go run webd.go
 
 The backend server will listen on port 9090 by default.
 The port can be changed in the cmd/webd/config.toml file.
+Please note that you have to be in the cmd/webd directory to run the webd.go file because of the way the app searches for the config file
 
 # Project Structure
 
