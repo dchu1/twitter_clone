@@ -8,11 +8,7 @@ import (
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	// Get the session from the context
-	sess, ok := session.FromContext(r.Context())
-	if !ok {
-		http.Error(w, "Context has no session", http.StatusInternalServerError)
-		return
-	}
+	sess, _ := session.FromContext(r.Context())
 	if sess != nil {
 		sess.Set("authenticated", false)
 		session.GlobalSessions.SessionDestroy(w, r)
