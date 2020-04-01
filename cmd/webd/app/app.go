@@ -244,6 +244,12 @@ func (appList *App) getUser(id uint64) *User {
 	return appList.users[id]
 }
 
+func (appList *App) GetUser(id uint64) *User {
+	user := appList.getUser(id)
+	temp := user.Clone()
+	return &temp
+}
+
 // GetUserPosts returns a list of all the posts by a user.
 func (appList *App) GetUserPosts(userId uint64) []Post {
 	posts := make([]Post, 0, 100)

@@ -18,7 +18,8 @@ Configure backend url in cmd/frontend/src/environment
     ng serve
 
 # Running the backend
-    go run cmd/webd/webd.go
+    cd cmd/webd
+    go run webd.go
 
 The backend server will listen on port 9090 by default.
 The port can be changed in the cmd/webd/config.toml file.
