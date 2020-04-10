@@ -1,6 +1,7 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -16,13 +17,13 @@ type credentialsEntry struct {
 	credentials *auth.Credentials
 }
 
-func (cr *credentialsRepository) CreateCredentials(credentials auth.Credentials) error {
+func (cr *credentialsRepository) CreateCredentials(ctx context.Context, credentials auth.Credentials) error {
 	cr.storage.credentialsRWMu.Lock()
 	defer cr.storage.credentialsRWMu.Unlock()
 	cr.storage.credentials[credentials.Email] = credentials.Password
 	return nil
 }
-func (cr *credentialsRepository) GetCredentials(credentials auth.Credentials) (auth.Credentials, error) {
+func (cr *credentialsRepository) GetCredentials(ctx context.Context, credentials auth.Credentials) (auth.Credentials, error) {
 	cr.storage.credentialsRWMu.Lock()
 	defer cr.storage.credentialsRWMu.Unlock()
 	pw, exists := cr.storage.credentials[credentials.Email]
@@ -31,9 +32,9 @@ func (cr *credentialsRepository) GetCredentials(credentials auth.Credentials) (a
 	}
 	return auth.Credentials{credentials.Email, pw}, nil
 }
-func (cr *credentialsRepository) UpdateCredentials(credentials auth.Credentials) error {
+func (cr *credentialsRepository) UpdateCredentials(ctx context.Context, credentials auth.Credentials) error {
 	return errors.New("Feature not implemented")
 }
-func (cr *credentialsRepository) DeleteCredentials(credentials auth.Credentials) error {
+func (cr *credentialsRepository) DeleteCredentials(ctx context.Context, credentials auth.Credentials) error {
 	return errors.New("Feature not implemented")
 }

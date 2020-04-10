@@ -1,6 +1,7 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -23,9 +24,9 @@ func NewUserRepository(storage *memoryStorage) user.UserRepository {
 }
 
 // CreateUser adds a user to the appropriate data structures
-func (userRepository *userRepository) CreateUser(info user.AccountInformation) (uint64, error) {
+func (userRepository *userRepository) CreateUser(ctx context.Context, info user.AccountInformation) (uint64, error) {
 	// Check whether user already exists
-	userObj, _ := userRepository.GetUserByUsername(info.Email)
+	userObj, _ := userRepository.GetUserByUsername(ctx, info.Email)
 	if userObj != nil {
 		return 0, errors.New("duplicate email")
 	}
@@ -42,7 +43,7 @@ func (userRepository *userRepository) CreateUser(info user.AccountInformation) (
 }
 
 // GetUser creates a deep copy of the specified users.
-func (userRepo *userRepository) GetUser(userID uint64) (*user.User, error) {
+func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*user.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
 	userEntry, exists := userRepo.storage.users[userID]
@@ -53,7 +54,7 @@ func (userRepo *userRepository) GetUser(userID uint64) (*user.User, error) {
 }
 
 // GetUsers creates a deep copy of the specified users.
-func (userRepo *userRepository) GetUsers(userIDs []uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) ([]*user.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
 	cp := make([]*user.User, 0, len(userIDs))
@@ -65,7 +66,7 @@ func (userRepo *userRepository) GetUsers(userIDs []uint64) ([]*user.User, error)
 
 // FollowUser updates the following user's following map, and the followed user's followers map
 // to reflect that a user is following another user
-func (userRepo *userRepository) FollowUser(followingUserID uint64, UserIDToFollow uint64) error {
+func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID uint64, UserIDToFollow uint64) error {
 	if followingUserID == UserIDToFollow {
 		return errors.New("duplicate user ids")
 	}
@@ -97,7 +98,7 @@ func (userRepo *userRepository) FollowUser(followingUserID uint64, UserIDToFollo
 
 // UnFollowUser updates the following user's following map, and the followed user's followers map
 // to reflect that a user has unfollowed another user
-func (userRepo *userRepository) UnFollowUser(followingUserID uint64, UserIDToUnfollow uint64) error {
+func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserID uint64, UserIDToUnfollow uint64) error {
 	if followingUserID == UserIDToUnfollow {
 		return errors.New("duplicate user ids")
 	}
@@ -136,7 +137,7 @@ func (userRepo *userRepository) UnFollowUser(followingUserID uint64, UserIDToUnf
 // }
 
 // GetUserByUsername returns a user object by their username
-func (userRepo *userRepository) GetUserByUsername(email string) (*user.User, error) {
+func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email string) (*user.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
 	for _, v := range userRepo.storage.users {
@@ -148,7 +149,7 @@ func (userRepo *userRepository) GetUserByUsername(email string) (*user.User, err
 }
 
 // GetFollowing returns an array of users that the given user is following
-func (userRepo *userRepository) GetFollowing(userId uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64) ([]*user.User, error) {
 	// Get the user object from the users map
 	userEntry, err := userRepo.storage.getUserEntry(userId)
 	if err != nil {
@@ -171,7 +172,7 @@ func (userRepo *userRepository) GetFollowing(userId uint64) ([]*user.User, error
 }
 
 // GetNotFollowing returns an array of users that the given user is not following
-func (userRepo *userRepository) GetNotFollowing(userId uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint64) ([]*user.User, error) {
 	// Get the user object from the users map
 	userEntry, err := userRepo.storage.getUserEntry(userId)
 	if err != nil {
@@ -196,7 +197,7 @@ func (userRepo *userRepository) GetNotFollowing(userId uint64) ([]*user.User, er
 	return tempArray, nil
 }
 
-func (userRepo *userRepository) AddPost(userID uint64, postID uint64) error {
+func (userRepo *userRepository) AddPost(ctx context.Context, userID uint64, postID uint64) error {
 	userEntry, err := userRepo.storage.getUserEntry(userID)
 	if err != nil {
 		return err
@@ -207,9 +208,9 @@ func (userRepo *userRepository) AddPost(userID uint64, postID uint64) error {
 	return nil
 }
 
-func (userRepo *userRepository) DeleteUser(uint64) error {
+func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) error {
 	return errors.New("Feature not implemented")
 }
-func (userRepo *userRepository) UpdateUserAccountInfo(user.AccountInformation) error {
+func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info user.AccountInformation) error {
 	return errors.New("Feature not implemented")
 }

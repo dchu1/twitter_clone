@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"time"
@@ -11,18 +12,18 @@ import (
 
 // Service is the interface that provides app methods.
 type Service interface {
-	CreateUser(user.AccountInformation) (uint64, error)
-	CreatePost(user.AccountInformation, post.Post) (uint64, error)
-	GetUser(uint64) (*user.User, error)
-	GetUsers([]uint64) ([]*user.User, error)
-	GetFollowing(uint64) ([]*user.User, error)
-	GetNotFollowing(uint64) ([]*user.User, error)
-	UpdateUserAccountInfo(user.AccountInformation) error
-	FollowUser(uint64, uint64) error
-	UnFollowUser(uint64, uint64) error
-	DeleteUser(uint64) error
+	CreateUser(context.Context, user.AccountInformation) (uint64, error)
+	CreatePost(context.Context, user.AccountInformation, post.Post) (uint64, error)
+	GetUser(context.Context, uint64) (*user.User, error)
+	GetUsers(context.Context, []uint64) ([]*user.User, error)
+	GetFollowing(context.Context, uint64) ([]*user.User, error)
+	GetNotFollowing(context.Context, uint64) ([]*user.User, error)
+	UpdateUserAccountInfo(context.Context, user.AccountInformation) error
+	FollowUser(context.Context, uint64, uint64) error
+	UnFollowUser(context.Context, uint64, uint64) error
+	DeleteUser(context.Context, uint64) error
 
-	GetFeed(uint64) ([]*Post, error)
+	GetFeed(context.Context, uint64) ([]*Post, error)
 }
 
 type service struct {
@@ -51,10 +52,10 @@ func NewService(ur user.UserRepository, pr post.PostRepository) Service {
 }
 
 // GetFeed returns a given user's feed. Not sure if this should be in the service layer...
-func (s *service) GetFeed(userID uint64) ([]*Post, error) {
+func (s *service) GetFeed(ctx context.Context, userID uint64) ([]*Post, error) {
 	retArray := make([]*Post, 0, 100)
 	// Get our user
-	userObj, err := s.userRepo.GetUser(userID)
+	userObj, err := s.userRepo.GetUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +67,14 @@ func (s *service) GetFeed(userID uint64) ([]*Post, error) {
 	for k := range userObj.Followers {
 		followed = append(followed, k)
 	}
-	followedArr, err := s.userRepo.GetUsers(followed)
+	followedArr, err := s.userRepo.GetUsers(ctx, followed)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get posts
 	for _, follower := range followedArr {
-		tempArr, err := s.postRepo.GetPosts(follower.Posts)
+		tempArr, err := s.postRepo.GetPosts(ctx, follower.Posts)
 		if err != nil {
 			return nil, err
 		}
@@ -93,44 +94,44 @@ func (s *service) GetFeed(userID uint64) ([]*Post, error) {
 	return retArray, nil
 }
 
-func (s *service) CreateUser(info user.AccountInformation) (uint64, error) {
-	return s.userRepo.CreateUser(info)
+func (s *service) CreateUser(ctx context.Context, info user.AccountInformation) (uint64, error) {
+	return s.userRepo.CreateUser(ctx, info)
 }
 
-func (s *service) CreatePost(info user.AccountInformation, p post.Post) (uint64, error) {
-	postID, err := s.postRepo.CreatePost(p)
+func (s *service) CreatePost(ctx context.Context, info user.AccountInformation, p post.Post) (uint64, error) {
+	postID, err := s.postRepo.CreatePost(ctx, p)
 	if err != nil {
 		return 0, err
 	}
-	err = s.userRepo.AddPost(info.UserID, postID)
+	err = s.userRepo.AddPost(ctx, info.UserID, postID)
 	if err != nil {
 		return postID, err
 	}
 	return postID, nil
 }
 
-func (s *service) GetUser(userID uint64) (*user.User, error) {
-	return s.userRepo.GetUser(userID)
+func (s *service) GetUser(ctx context.Context, userID uint64) (*user.User, error) {
+	return s.userRepo.GetUser(ctx, userID)
 }
-func (s *service) GetUsers(userIDs []uint64) ([]*user.User, error) {
-	return s.userRepo.GetUsers(userIDs)
+func (s *service) GetUsers(ctx context.Context, userIDs []uint64) ([]*user.User, error) {
+	return s.userRepo.GetUsers(ctx, userIDs)
 }
 
-func (s *service) GetFollowing(userID uint64) ([]*user.User, error) {
-	return s.userRepo.GetFollowing(userID)
+func (s *service) GetFollowing(ctx context.Context, userID uint64) ([]*user.User, error) {
+	return s.userRepo.GetFollowing(ctx, userID)
 }
-func (s *service) GetNotFollowing(userID uint64) ([]*user.User, error) {
-	return s.userRepo.GetNotFollowing(userID)
+func (s *service) GetNotFollowing(ctx context.Context, userID uint64) ([]*user.User, error) {
+	return s.userRepo.GetNotFollowing(ctx, userID)
 }
-func (s *service) UpdateUserAccountInfo(user.AccountInformation) error {
+func (s *service) UpdateUserAccountInfo(ctx context.Context, info user.AccountInformation) error {
 	return errors.New("Feature not implemented")
 }
-func (s *service) FollowUser(source uint64, target uint64) error {
-	return s.userRepo.FollowUser(source, target)
+func (s *service) FollowUser(ctx context.Context, source uint64, target uint64) error {
+	return s.userRepo.FollowUser(ctx, source, target)
 }
-func (s *service) UnFollowUser(source uint64, target uint64) error {
-	return s.userRepo.UnFollowUser(source, target)
+func (s *service) UnFollowUser(ctx context.Context, source uint64, target uint64) error {
+	return s.userRepo.UnFollowUser(ctx, source, target)
 }
-func (s *service) DeleteUser(uint64) error {
+func (s *service) DeleteUser(ctx context.Context, userID uint64) error {
 	return errors.New("Feature not implemented")
 }

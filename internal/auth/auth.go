@@ -1,6 +1,9 @@
 package auth
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type Credentials struct {
 	Email    string
@@ -8,18 +11,18 @@ type Credentials struct {
 }
 
 type CredentialsRepository interface {
-	CreateCredentials(Credentials) error
-	GetCredentials(Credentials) error
-	UpdateCredentials(Credentials) error
-	DeleteCredentials(Credentials) error
+	CreateCredentials(context.Context, Credentials) error
+	GetCredentials(context.Context, Credentials) error
+	UpdateCredentials(context.Context, Credentials) error
+	DeleteCredentials(context.Context, Credentials) error
 }
 
 // Service is the interface that provides auth methods.
 type Service interface {
-	CreateCredentials(Credentials) error
-	GetCredentials(Credentials) error
-	UpdateCredentials(Credentials) error
-	DeleteCredentials(Credentials) error
+	CreateCredentials(context.Context, Credentials) error
+	GetCredentials(context.Context, Credentials) error
+	UpdateCredentials(context.Context, Credentials) error
+	DeleteCredentials(context.Context, Credentials) error
 }
 
 type service struct {
@@ -30,15 +33,15 @@ func NewService(cr CredentialsRepository) Service {
 	return &service{cr}
 }
 
-func (s *service) CreateCredentials(creds Credentials) error {
-	return s.credentialsRepo.CreateCredentials(creds)
+func (s *service) CreateCredentials(ctx context.Context, creds Credentials) error {
+	return s.credentialsRepo.CreateCredentials(ctx, creds)
 }
-func (s *service) GetCredentials(creds Credentials) error {
-	return s.credentialsRepo.GetCredentials(creds)
+func (s *service) GetCredentials(ctx context.Context, creds Credentials) error {
+	return s.credentialsRepo.GetCredentials(ctx, creds)
 }
-func (s *service) UpdateCredentials(creds Credentials) error {
+func (s *service) UpdateCredentials(ctx context.Context, creds Credentials) error {
 	return errors.New("Feature not implemented")
 }
-func (s *service) DeleteCredentials(creds Credentials) error {
+func (s *service) DeleteCredentials(ctx context.Context, creds Credentials) error {
 	return errors.New("Feature not implemented")
 }

@@ -1,6 +1,9 @@
 package post
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // Post struct containing attributes of a Post
 type Post struct {
@@ -11,8 +14,8 @@ type Post struct {
 }
 
 type PostRepository interface {
-	CreatePost(Post) (uint64, error)
-	GetPosts([]uint64) ([]*Post, error)
-	UpdatePost(Post) error
-	DeletePost(uint64) error
+	CreatePost(context.Context, Post) (uint64, error)
+	GetPosts(context.Context, []uint64) ([]*Post, error)
+	UpdatePost(context.Context, Post) error
+	DeletePost(context.Context, uint64) error
 }

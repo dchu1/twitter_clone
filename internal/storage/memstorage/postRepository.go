@@ -1,6 +1,7 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -22,7 +23,7 @@ func NewPostRepository(storage *memoryStorage) post.PostRepository {
 }
 
 // CreatePost inserts a post into our post map
-func (postRepo *postRepository) CreatePost(post post.Post) (uint64, error) {
+func (postRepo *postRepository) CreatePost(ctx context.Context, post post.Post) (uint64, error) {
 	postRepo.storage.postsRWMu.Lock()
 	defer postRepo.storage.postsRWMu.Unlock()
 	postEntry := new(postEntry)
@@ -34,7 +35,7 @@ func (postRepo *postRepository) CreatePost(post post.Post) (uint64, error) {
 }
 
 // GetPosts retrieves an array of post from the post map
-func (postRepo *postRepository) GetPosts(postIDs []uint64) ([]*post.Post, error) {
+func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) ([]*post.Post, error) {
 	postRepo.storage.postsRWMu.RLock()
 	defer postRepo.storage.postsRWMu.RUnlock()
 	postArr := make([]*post.Post, 0, len(postIDs))
@@ -44,10 +45,10 @@ func (postRepo *postRepository) GetPosts(postIDs []uint64) ([]*post.Post, error)
 	return postArr, nil
 }
 
-func (postRepo *postRepository) UpdatePost(post post.Post) error {
+func (postRepo *postRepository) UpdatePost(ctx context.Context, post post.Post) error {
 	return errors.New("Feature not implemented")
 }
 
-func (postRepo *postRepository) DeletePost(postIDs uint64) error {
+func (postRepo *postRepository) DeletePost(ctx context.Context, postIDs uint64) error {
 	return errors.New("Feature not implemented")
 }

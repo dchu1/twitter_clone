@@ -14,8 +14,8 @@ func TestAddUser(t *testing.T) {
 	storage := memstorage.NewMemoryStorage()
 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
 	expected := user.AccountInformation{"TestFirst", "TestLast", "test@test.com", 0}
-	app.CreateUser(expected)
-	actual, _ := app.GetUser(0)
+	userID, _ := app.CreateUser(nil, expected)
+	actual, _ := app.GetUser(nil, userID)
 	if expected.Email != actual.AccountInformation.Email ||
 		expected.FirstName != actual.AccountInformation.FirstName ||
 		expected.LastName != actual.AccountInformation.LastName ||
@@ -27,14 +27,14 @@ func TestAddUser(t *testing.T) {
 func TestFollowUser(t *testing.T) {
 	storage := memstorage.NewMemoryStorage()
 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-	followingUserID, _ := app.CreateUser(user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", 0})
-	UserIDToFollow, _ := app.CreateUser(user.AccountInformation{"FollowingFirst", "FollowingLast", "following@test.com", 0})
-	err := app.FollowUser(followingUserID, UserIDToFollow)
+	followingUserID, _ := app.CreateUser(nil, user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", 0})
+	UserIDToFollow, _ := app.CreateUser(nil, user.AccountInformation{"FollowingFirst", "FollowingLast", "following@test.com", 0})
+	err := app.FollowUser(nil, followingUserID, UserIDToFollow)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	follower, _ := app.GetUser(followingUserID)
-	followed, _ := app.GetUser(UserIDToFollow)
+	follower, _ := app.GetUser(nil, followingUserID)
+	followed, _ := app.GetUser(nil, UserIDToFollow)
 	if _, exists := follower.Following[UserIDToFollow]; !exists {
 		t.Error(fmt.Sprintf("Test Failed Following map not updated properly: %v", follower.Following))
 	}
@@ -46,21 +46,21 @@ func TestFollowUser(t *testing.T) {
 func TestUnFollowUser(t *testing.T) {
 	storage := memstorage.NewMemoryStorage()
 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-	User0ID, _ := app.CreateUser(user.AccountInformation{"User0First", "User0Last", "User0@test.com", 0})
-	User1ID, _ := app.CreateUser(user.AccountInformation{"User1First", "User1Last", "User1@test.com", 0})
-	User2ID, _ := app.CreateUser(user.AccountInformation{"User2First", "User2Last", "User2@test.com", 0})
+	User0ID, _ := app.CreateUser(nil, user.AccountInformation{"User0First", "User0Last", "User0@test.com", 0})
+	User1ID, _ := app.CreateUser(nil, user.AccountInformation{"User1First", "User1Last", "User1@test.com", 0})
+	User2ID, _ := app.CreateUser(nil, user.AccountInformation{"User2First", "User2Last", "User2@test.com", 0})
 
 	User0FollowingList := map[uint64]struct{}{2: struct{}{}}
 	User1FollowerList := make(map[uint64]struct{})
 	User2FollowerList := map[uint64]struct{}{0: struct{}{}}
 
-	app.FollowUser(User0ID, User1ID)
-	app.FollowUser(User0ID, User2ID)
-	app.UnFollowUser(User0ID, User1ID)
+	app.FollowUser(nil, User0ID, User1ID)
+	app.FollowUser(nil, User0ID, User2ID)
+	app.UnFollowUser(nil, User0ID, User1ID)
 
-	u1, _ := app.GetUser(User0ID)
-	u2, _ := app.GetUser(User1ID)
-	u3, _ := app.GetUser(User2ID)
+	u1, _ := app.GetUser(nil, User0ID)
+	u2, _ := app.GetUser(nil, User1ID)
+	u3, _ := app.GetUser(nil, User2ID)
 	if reflect.DeepEqual(u1.Following, User0FollowingList) == false {
 		t.Error("Test Failed Following map not updated properly")
 	}
@@ -75,10 +75,10 @@ func TestUnFollowUser(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	storage := memstorage.NewMemoryStorage()
 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-	userID, _ := app.CreateUser(user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", 0})
-	postID, _ := app.CreatePost(user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", userID}, post.Post{Message: "Test Message"})
+	userID, _ := app.CreateUser(nil, user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", 0})
+	postID, _ := app.CreatePost(nil, user.AccountInformation{"FollowerFirst", "FollowerLast", "follower@test.com", userID}, post.Post{Message: "Test Message"})
 
-	posts, err := app.GetFeed(userID)
+	posts, err := app.GetFeed(nil, userID)
 	if err != nil {
 		t.Error(err.Error())
 	}

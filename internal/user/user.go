@@ -1,5 +1,7 @@
 package user
 
+import "context"
+
 // AccountInformation represents account information
 type AccountInformation struct {
 	FirstName string `json:"firstname,omitempty"`
@@ -16,16 +18,16 @@ type User struct {
 }
 
 type UserRepository interface {
-	CreateUser(AccountInformation) (uint64, error)
-	GetUser(uint64) (*User, error)
-	GetUsers([]uint64) ([]*User, error)
-	GetFollowing(uint64) ([]*User, error)
-	GetNotFollowing(uint64) ([]*User, error)
-	UpdateUserAccountInfo(AccountInformation) error
-	FollowUser(uint64, uint64) error
-	UnFollowUser(uint64, uint64) error
-	DeleteUser(uint64) error
-	AddPost(uint64, uint64) error
+	CreateUser(context.Context, AccountInformation) (uint64, error)
+	GetUser(context.Context, uint64) (*User, error)
+	GetUsers(context.Context, []uint64) ([]*User, error)
+	GetFollowing(context.Context, uint64) ([]*User, error)
+	GetNotFollowing(context.Context, uint64) ([]*User, error)
+	UpdateUserAccountInfo(context.Context, AccountInformation) error
+	FollowUser(context.Context, uint64, uint64) error
+	UnFollowUser(context.Context, uint64, uint64) error
+	DeleteUser(context.Context, uint64) error
+	AddPost(context.Context, uint64, uint64) error
 }
 
 // copyFollowMap makes a deep copy of a user's following or followed map
