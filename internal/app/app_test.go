@@ -96,9 +96,9 @@ func TestCreatePost(t *testing.T) {
 // 	userListmu := sync.Mutex{}
 // 	numUser := 100
 // 	wg.Add(numUser)
-// 	storage = memstorage.NewMemoryStorage()
+// 	storage := memstorage.NewMemoryStorage()
 // 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-// 	app.AddUser("TestFirstName", "TestLastName", "TestEmail", "TestPassword")
+// 	app.AddUser("TestFirstName", "TestLastName", "TestEmail", 0)
 
 // 	for user := 0; user < numUser; user++ {
 // 		go func(user int) {

@@ -27,10 +27,11 @@ type Service interface {
 
 type service struct {
 	credentialsRepo CredentialsRepository
+	sessionManager  *Manager
 }
 
-func NewService(cr CredentialsRepository) Service {
-	return &service{cr}
+func NewService(cr CredentialsRepository, sm *Manager) Service {
+	return &service{cr, sm}
 }
 
 func (s *service) CreateCredentials(ctx context.Context, creds Credentials) error {
