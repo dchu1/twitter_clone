@@ -2,7 +2,10 @@ package app
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
@@ -86,21 +89,6 @@ func TestCreatePost(t *testing.T) {
 		t.Error("Test Failed Posts struct not in sync")
 	}
 }
-
-// func TestGetFeed(t *testing.T) {
-// 	storage = memstorage.NewMemoryStorage()
-// 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-// 	app.AddUser("TestFirst", "TestLast", "Test@test.com", "Testpass")
-// 	userID := app.users[0].Id
-// 	app.CreatePost(userID, "Test Message")
-// 	userPost := app.users[0].post[0]
-
-// 	posts, _ := app.GetFeed(userID)
-
-// 	if reflect.DeepEqual(*userPost, posts[0]) == false {
-// 		t.Error("Test Failed added post not returned in the list of feeds")
-// 	}
-// }
 
 // func TestConcurrentGetUsers(t *testing.T) {
 // 	var wg sync.WaitGroup
@@ -449,62 +437,71 @@ func TestCreatePost(t *testing.T) {
 // 	}
 // }
 
-// func TestConcurrentFollow(t *testing.T) {
-// 	var wg sync.WaitGroup
-// 	rand.Seed(42)
-// 	numUsers := 100
-// 	wg.Add(numUsers)
-// 	storage = memstorage.NewMemoryStorage()
-// 	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
-// 	// Create users
-// 	for i := 0; i < numUsers; i++ {
-// 		app.AddUser(strconv.Itoa(i), strconv.Itoa(i), strconv.Itoa(i), strconv.Itoa(i))
-// 	}
+func TestConcurrentFollow(t *testing.T) {
+	var wg sync.WaitGroup
+	rand.Seed(42)
+	numUsers := 100
+	wg.Add(numUsers)
+	storage := memstorage.NewMemoryStorage()
+	app := NewService(memstorage.NewUserRepository(storage), memstorage.NewPostRepository(storage))
+	// Create users
+	for i := 0; i < numUsers; i++ {
+		app.CreateUser(nil, user.AccountInformation{strconv.Itoa(i), strconv.Itoa(i), strconv.Itoa(i), 0})
+	}
 
-// 	// Have them all follow each other and then make a post
-// 	for i := 0; i < numUsers; i++ {
-// 		go func(userId uint64) {
-// 			defer wg.Done()
-// 			for k := 0; k < numUsers; k++ {
-// 				app.FollowUser(userId, uint64(k))
-// 			}
-// 			// sleep for some random amount of time between 0 and 5 seconds
-// 			//time.Sleep(time.Second * time.Duration(rand.Intn(20)))
-// 			app.CreatePost(userId, strconv.FormatUint(userId, 10))
-// 		}(uint64(i))
-// 	}
+	// Have them all follow each other and then make a post
+	for i := 0; i < numUsers; i++ {
+		go func(userId uint64) {
+			defer wg.Done()
+			for k := 0; k < numUsers; k++ {
+				app.FollowUser(nil, uint64(userId), uint64(k))
+			}
+			// sleep for some random amount of time between 0 and 5 seconds
+			//time.Sleep(time.Second * time.Duration(rand.Intn(20)))
+			app.CreatePost(nil, user.AccountInformation{UserID: uint64(userId)}, post.Post{Message: strconv.FormatUint(userId, 10)})
+		}(uint64(i))
+	}
 
-// 	wg.Wait()
+	wg.Wait()
 
-// 	if len(app.posts) != numUsers {
-// 		t.Error(fmt.Sprintf("Incorrect # of posts. Expected %d, found %d", numUsers, len(app.posts)))
-// 	}
+	// Get each users following list
+	following := make([][]*user.User, numUsers)
+	for i := 0; i < numUsers; i++ {
+		var err error
+		following[i], err = app.GetFollowing(nil, uint64(i))
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if len(following[i]) != numUsers-1 {
+			t.Error(fmt.Sprintf("Incorrect number of users following. Expected %d, found %d", numUsers-1, len(following[i])))
+		}
+	}
 
-// 	// Get each users feed
-// 	feeds := make([][]Post, numUsers)
-// 	for i := 0; i < numUsers; i++ {
-// 		var err error
-// 		feeds[i], err = app.GetFeed(uint64(i))
-// 		if err != nil {
-// 			t.Error(err.Error())
-// 		}
-// 		if len(feeds[i]) != numUsers {
-// 			t.Error(fmt.Sprintf("Not enough posts in user %d feed. Expected %d, found %d", i, numUsers, len(feeds[i])))
-// 		}
-// 	}
+	// Get each users feed
+	feeds := make([][]*Post, numUsers)
+	for i := 0; i < numUsers; i++ {
+		var err error
+		feeds[i], err = app.GetFeed(nil, uint64(i))
+		if err != nil {
+			panic(err.Error())
+		}
+		if len(feeds[i]) != numUsers {
+			t.Error(fmt.Sprintf("Not enough posts in user %d feed. Expected %d, found %d", i, numUsers, len(feeds[i])))
+		}
+	}
 
-// 	// Check to make sure all the feeds are the same. This doesn't work since there is no way to guarantee
-// 	// that two posts do not have the same timestamp
-// 	for i := 1; i < numUsers; i++ {
-// 		for k := 0; k < numUsers; k++ {
-// 			if reflect.DeepEqual(feeds[0][k].Message, feeds[i][k].Message) == false {
-// 				if feeds[0][k].Timestamp.Equal(feeds[i][k].Timestamp) == false {
-// 					t.Error(fmt.Sprintf("User %d feed not equal to first feed. Expected %s, Found %s", i, feeds[0][k].Message, feeds[i][k].Message))
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+	// Check to make sure all the feeds are the same. This doesn't work since there is no way to guarantee
+	// that two posts do not have the same timestamp
+	for i := 1; i < numUsers; i++ {
+		for k := 0; k < numUsers; k++ {
+			if reflect.DeepEqual(feeds[0][k].Message, feeds[i][k].Message) == false {
+				if feeds[0][k].Timestamp.Equal(feeds[i][k].Timestamp) == false {
+					t.Error(fmt.Sprintf("User %d feed not equal to first feed", i))
+				}
+			}
+		}
+	}
+}
 
 // func TestConcurrentUnfollowUser(t *testing.T) {
 // 	var wg sync.WaitGroup

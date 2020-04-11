@@ -77,9 +77,10 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 		return err
 	}
 	followingUserIDObject.followingRWMu.Lock()
-	newfollowing := followingUserIDObject.user.Following
-	newfollowing[UserIDToFollow] = struct{}{}
-	followingUserIDObject.user.Following = newfollowing
+	followingUserIDObject.user.Following[UserIDToFollow] = struct{}{}
+	// newfollowing := followingUserIDObject.user.Following
+	// newfollowing[UserIDToFollow] = struct{}{}
+	// followingUserIDObject.user.Following = newfollowing
 	followingUserIDObject.followingRWMu.Unlock()
 
 	//Add userID who is following in the followers list of the user being followed
@@ -88,9 +89,10 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 		return err
 	}
 	UserIDToFollowObject.followersRWMu.Lock()
-	newfollowers := UserIDToFollowObject.user.Followers
-	newfollowers[followingUserID] = struct{}{}
-	UserIDToFollowObject.user.Followers = newfollowers
+	UserIDToFollowObject.user.Followers[followingUserID] = struct{}{}
+	// newfollowers := UserIDToFollowObject.user.Followers
+	// newfollowers[followingUserID] = struct{}{}
+	// UserIDToFollowObject.user.Followers = newfollowers
 	UserIDToFollowObject.followersRWMu.Unlock()
 
 	return nil

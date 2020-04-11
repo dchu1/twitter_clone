@@ -61,20 +61,22 @@ func (s *service) GetFeed(ctx context.Context, userID uint64) ([]*Post, error) {
 	}
 
 	// Get user ids followed
-	followed := make([]uint64, len(userObj.Followers))
-	// add user to followed
+	followed := make([]uint64, 0, len(userObj.Followers))
+	// add this user id to followed
 	followed = append(followed, userID)
 	for k := range userObj.Followers {
 		followed = append(followed, k)
 	}
+
+	// Get the user objects
 	followedArr, err := s.userRepo.GetUsers(ctx, followed)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get posts
-	for _, follower := range followedArr {
-		tempArr, err := s.postRepo.GetPosts(ctx, follower.Posts)
+	for _, userObj := range followedArr {
+		tempArr, err := s.postRepo.GetPosts(ctx, userObj.Posts)
 		if err != nil {
 			return nil, err
 		}
@@ -84,7 +86,7 @@ func (s *service) GetFeed(ctx context.Context, userID uint64) ([]*Post, error) {
 			p.PostID = post.PostID
 			p.Timestamp = post.Timestamp
 			p.Message = post.Message
-			p.Author = follower.AccountInformation
+			p.Author = userObj.AccountInformation
 			retArray = append(retArray, p)
 		}
 	}
