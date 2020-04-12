@@ -17,6 +17,10 @@ type postEntry struct {
 	post *post.Post
 }
 
+func NewPostRepository() post.PostRepository {
+	return &postRepository{MemoryStorage}
+}
+
 func NewPostRepository(storage *memoryStorage) post.PostRepository {
 	return &postRepository{storage}
 }

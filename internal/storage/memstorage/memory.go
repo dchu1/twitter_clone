@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+var MemoryStorage memoryStorage
+
 type memoryStorage struct {
 	usersRWMu       sync.RWMutex // protects users map
 	postsRWMu       sync.RWMutex // protects posts map
@@ -20,6 +22,10 @@ type memoryStorage struct {
 
 func NewMemoryStorage() *memoryStorage {
 	return &memoryStorage{sync.RWMutex{}, sync.RWMutex{}, sync.Mutex{}, sync.Mutex{}, sync.RWMutex{}, make(map[string]*credentialsEntry), make(map[uint64]*userEntry), make(map[uint64]*postEntry), 0, 0}
+}
+
+func InitMemoryStorage() {
+	MemoryStorage = NewMemoryStorage()
 }
 
 // generateUserId gets a value from the userId counter, then increments the counter

@@ -19,6 +19,10 @@ type userEntry struct {
 	user          *user.User
 }
 
+func NewUserRepository() user.UserRepository {
+	return &userRepository{MemoryStorage}
+}
+
 func NewUserRepository(storage *memoryStorage) user.UserRepository {
 	return &userRepository{storage}
 }
