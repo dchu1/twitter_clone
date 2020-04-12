@@ -20,17 +20,28 @@ type credentialsEntry struct {
 func (cr *credentialsRepository) CreateCredentials(ctx context.Context, credentials auth.Credentials) error {
 	cr.storage.credentialsRWMu.Lock()
 	defer cr.storage.credentialsRWMu.Unlock()
-	cr.storage.credentials[credentials.Email] = credentials.Password
+	credEntry := new(credentialsEntry)
+	credEntry.credentials = &credentials
+	cr.storage.credentials[credentials.Email] = credEntry
 	return nil
 }
 func (cr *credentialsRepository) GetCredentials(ctx context.Context, credentials auth.Credentials) (auth.Credentials, error) {
 	cr.storage.credentialsRWMu.Lock()
 	defer cr.storage.credentialsRWMu.Unlock()
-	pw, exists := cr.storage.credentials[credentials.Email]
+	entry, exists := cr.storage.credentials[credentials.Email]
 	if !exists {
 		return auth.Credentials{}, errors.New("username not found")
 	}
-	return auth.Credentials{credentials.Email, pw}, nil
+	return auth.Credentials{entry.credentials.Email, entry.credentials.UserID, entry.credentials.Password}, nil
+}
+func (cr *credentialsRepository) ValidateCredentials(ctx context.Context, credentials auth.Credentials) (auth.Credentials, error) {
+	cr.storage.credentialsRWMu.Lock()
+	defer cr.storage.credentialsRWMu.Unlock()
+	entry, exists := cr.storage.credentials[credentials.Email]
+	if !exists {
+		return auth.Credentials{}, errors.New("username not found")
+	}
+	return auth.Credentials{entry.credentials.Email, entry.credentials.UserID, ""}, nil
 }
 func (cr *credentialsRepository) UpdateCredentials(ctx context.Context, credentials auth.Credentials) error {
 	return errors.New("Feature not implemented")

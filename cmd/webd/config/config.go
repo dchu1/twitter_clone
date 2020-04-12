@@ -7,12 +7,21 @@ import (
 )
 
 type Config struct {
-	Server server
+	Server         server
+	Application    application
+	Authentication authentication
 }
 
 type server struct {
 	Address string
 	Port    string
+}
+
+type application struct {
+	ContextTimeout string
+}
+
+type authentication struct {
 }
 
 func GetConfig(filepath string) *Config {

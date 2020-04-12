@@ -21,16 +21,16 @@ func main() {
 	handlers.SetState(app.MakeApp())
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/login", handlers.Login)
-	mux.HandleFunc("/signup", handlers.Signup)
-	mux.HandleFunc("/logout", handlers.Logout)
-	mux.Handle("/feed", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Feed), middleware.AuthMiddleware))
-	mux.Handle("/follow/create", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowCreateHandler), middleware.AuthMiddleware))
-	mux.Handle("/follow/destroy", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowDestroyHandler), middleware.AuthMiddleware))
-	mux.Handle("/user", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserHandler), middleware.AuthMiddleware))
-	mux.Handle("/post", middleware.MiddlewareInjector(http.HandlerFunc(handlers.PostHandler), middleware.AuthMiddleware))
-	mux.Handle("/user/following", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserFollowingHandler), middleware.AuthMiddleware))
-	mux.Handle("/user/notfollowing", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserNotFollowingHandler), middleware.AuthMiddleware))
+	mux.Handle("/login", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Login), middleware.ContextMiddleware))
+	mux.Handle("/signup", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Signup), middleware.ContextMiddleware))
+	mux.Handle("/logout", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Logout), middleware.ContextMiddleware))
+	mux.Handle("/feed", middleware.MiddlewareInjector(http.HandlerFunc(handlers.Feed), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/follow/create", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowCreateHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/follow/destroy", middleware.MiddlewareInjector(http.HandlerFunc(handlers.FollowDestroyHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/user", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/post", middleware.MiddlewareInjector(http.HandlerFunc(handlers.PostHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/user/following", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserFollowingHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
+	mux.Handle("/user/notfollowing", middleware.MiddlewareInjector(http.HandlerFunc(handlers.UserNotFollowingHandler), middleware.ContextMiddleware, middleware.AuthMiddleware))
 
 	origins := []string{"http://localhost:4200"}
 	headers := []string{"Content-Type", "X-Requested-With", "Range"}

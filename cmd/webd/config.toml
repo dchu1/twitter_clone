@@ -1,4 +1,7 @@
 # filename: config.toml
 [server]
-server = "localhost"
+address = "localhost"
 port = "9090"
+
+[application]
+contexttimeout = "5s" # timeout for contexts

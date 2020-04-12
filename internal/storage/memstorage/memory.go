@@ -11,7 +11,7 @@ type memoryStorage struct {
 	userIDMu        sync.Mutex   // protects userID counter
 	postIDMu        sync.Mutex   // protects postID counter
 	credentialsRWMu sync.RWMutex // protects the credentials map
-	credentials     map[string]string
+	credentials     map[string]*credentialsEntry
 	users           map[uint64]*userEntry
 	posts           map[uint64]*postEntry
 	userID          uint64
@@ -19,7 +19,7 @@ type memoryStorage struct {
 }
 
 func NewMemoryStorage() *memoryStorage {
-	return &memoryStorage{sync.RWMutex{}, sync.RWMutex{}, sync.Mutex{}, sync.Mutex{}, sync.RWMutex{}, make(map[string]string), make(map[uint64]*userEntry), make(map[uint64]*postEntry), 0, 0}
+	return &memoryStorage{sync.RWMutex{}, sync.RWMutex{}, sync.Mutex{}, sync.Mutex{}, sync.RWMutex{}, make(map[string]*credentialsEntry), make(map[uint64]*userEntry), make(map[uint64]*postEntry), 0, 0}
 }
 
 // generateUserId gets a value from the userId counter, then increments the counter

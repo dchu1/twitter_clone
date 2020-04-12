@@ -7,6 +7,7 @@ import (
 
 type Credentials struct {
 	Email    string
+	UserID   uint64
 	Password string
 }
 
@@ -21,6 +22,7 @@ type CredentialsRepository interface {
 type Service interface {
 	CreateCredentials(context.Context, Credentials) error
 	GetCredentials(context.Context, Credentials) error
+	ValidateCredentials(context.Context, Credentials) error
 	UpdateCredentials(context.Context, Credentials) error
 	DeleteCredentials(context.Context, Credentials) error
 }
@@ -38,6 +40,9 @@ func (s *service) CreateCredentials(ctx context.Context, creds Credentials) erro
 	return s.credentialsRepo.CreateCredentials(ctx, creds)
 }
 func (s *service) GetCredentials(ctx context.Context, creds Credentials) error {
+	return s.credentialsRepo.GetCredentials(ctx, creds)
+}
+func (s *service) ValidateCredentials(ctx context.Context, creds Credentials) error {
 	return s.credentialsRepo.GetCredentials(ctx, creds)
 }
 func (s *service) UpdateCredentials(ctx context.Context, creds Credentials) error {
