@@ -22,6 +22,8 @@ type Service interface {
 	CreateCredentials(context.Context, Credentials) error
 	GetCredentials(context.Context, Credentials) (Credentials, error)
 	ValidateCredentials(context.Context, Credentials) (bool, error)
+	// QuerySession(context.Context, Credentials)
+	// StartSession(context.Context, Credentials)
 	UpdateCredentials(context.Context, Credentials) error
 	DeleteCredentials(context.Context, Credentials) error
 }

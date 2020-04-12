@@ -15,6 +15,7 @@ type Post struct {
 
 type PostRepository interface {
 	CreatePost(context.Context, Post) (uint64, error)
+	GetPost(context.Context, uint64) (*Post, error)
 	GetPosts(context.Context, []uint64) ([]*Post, error)
 	UpdatePost(context.Context, Post) error
 	DeletePost(context.Context, uint64) error

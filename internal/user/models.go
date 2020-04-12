@@ -14,7 +14,7 @@ type User struct {
 	AccountInformation AccountInformation
 	Following          map[uint64]struct{}
 	Followers          map[uint64]struct{}
-	Posts              []uint64
+	//Posts              []uint64
 }
 
 type UserRepository interface {
@@ -28,7 +28,6 @@ type UserRepository interface {
 	FollowUser(context.Context, uint64, uint64) error
 	UnFollowUser(context.Context, uint64, uint64) error
 	DeleteUser(context.Context, uint64) error
-	AddPost(context.Context, uint64, uint64) error
 }
 
 // copyFollowMap makes a deep copy of a user's following or followed map
@@ -48,5 +47,5 @@ func (user *User) Clone() *User {
 }
 
 func NewUser(info AccountInformation) *User {
-	return &User{AccountInformation: info, Following: make(map[uint64]struct{}), Followers: make(map[uint64]struct{}), Posts: make([]uint64, 0, 100)}
+	return &User{AccountInformation: info, Following: make(map[uint64]struct{}), Followers: make(map[uint64]struct{})}
 }
