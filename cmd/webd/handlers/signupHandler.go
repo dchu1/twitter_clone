@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"context"
+	// "context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
@@ -31,10 +30,10 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add user credentials to auth server
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// defer cancel()
 
-	_, err = AuthClient.AddCredential(ctx, &authpb.UserCredential{Username: reqMessage.Email, Password: reqMessage.Password})
-
+	//_, err = AuthClient.AddCredential(ctx, &authpb.UserCredential{Username: reqMessage.Email, Password: reqMessage.Password})
+	_, err = AuthClient.AddCredential(r.Context(), &authpb.UserCredential{Username: reqMessage.Email, Password: reqMessage.Password})
 	APIResponse(w, r, http.StatusCreated, "Signup successful", make(map[string]string))
 }

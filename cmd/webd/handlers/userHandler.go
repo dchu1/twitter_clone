@@ -85,7 +85,6 @@ func UserNotFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
 
-
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		cookie, err := r.Cookie("sessionId")

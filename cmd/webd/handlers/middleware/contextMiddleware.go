@@ -13,7 +13,8 @@ func ContextMiddleware(next http.Handler) http.Handler {
 			ctx    context.Context
 			cancel context.CancelFunc
 		)
-		timeout, err := time.ParseDuration(Cfg.Application.ContextTimeout)
+		//timeout, err := time.ParseDuration(Cfg.Application.ContextTimeout)
+		timeout, err := time.ParseDuration("2s")
 		if err == nil {
 			// The request has a timeout, so create a context that is
 			// canceled automatically when the timeout expires.

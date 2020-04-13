@@ -1,17 +1,18 @@
 package handlers
 
 import (
-	"context"
+	// 	"context"
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"time"
 
+	// "net/url"
+	// "time"
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
+	// authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 )
 
 // PostHandler is the handler for /post. It is used to create posts
@@ -31,14 +32,15 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//Get user id of the session
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		cookie, err := r.Cookie("sessionId")
-		// if err != nil || cookie.Value != "" {
-		token, _ := url.QueryUnescape(cookie.Value)
-		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
-		// }
-		fmt.Println(user)
+		// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		// defer cancel()
+		// cookie, err := r.Cookie("sessionId")
+		// // if err != nil || cookie.Value != "" {
+		// token, _ := url.QueryUnescape(cookie.Value)
+		// user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// // }
+		// fmt.Println(user)
+		user := r.Context().Value("user").(*authpb.UserId)
 		err = application.CreatePost(user.UserId, reqMessage.Message)
 		if err != nil {
 			APIResponse(w, r, http.StatusInternalServerError, "Post not added", make(map[string]string))
