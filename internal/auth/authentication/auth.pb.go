@@ -110,6 +110,84 @@ func (m *UserCredential) GetPassword() string {
 	return ""
 }
 
+type UserId struct {
+	UserId               uint64   `protobuf:"varint,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UserId) Reset()         { *m = UserId{} }
+func (m *UserId) String() string { return proto.CompactTextString(m) }
+func (*UserId) ProtoMessage()    {}
+func (*UserId) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8bbd6f3875b0e874, []int{2}
+}
+
+func (m *UserId) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UserId.Unmarshal(m, b)
+}
+func (m *UserId) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UserId.Marshal(b, m, deterministic)
+}
+func (m *UserId) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UserId.Merge(m, src)
+}
+func (m *UserId) XXX_Size() int {
+	return xxx_messageInfo_UserId.Size(m)
+}
+func (m *UserId) XXX_DiscardUnknown() {
+	xxx_messageInfo_UserId.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UserId proto.InternalMessageInfo
+
+func (m *UserId) GetUserId() uint64 {
+	if m != nil {
+		return m.UserId
+	}
+	return 0
+}
+
+type AuthToken struct {
+	Token                string   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AuthToken) Reset()         { *m = AuthToken{} }
+func (m *AuthToken) String() string { return proto.CompactTextString(m) }
+func (*AuthToken) ProtoMessage()    {}
+func (*AuthToken) Descriptor() ([]byte, []int) {
+	return fileDescriptor_8bbd6f3875b0e874, []int{3}
+}
+
+func (m *AuthToken) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AuthToken.Unmarshal(m, b)
+}
+func (m *AuthToken) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AuthToken.Marshal(b, m, deterministic)
+}
+func (m *AuthToken) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AuthToken.Merge(m, src)
+}
+func (m *AuthToken) XXX_Size() int {
+	return xxx_messageInfo_AuthToken.Size(m)
+}
+func (m *AuthToken) XXX_DiscardUnknown() {
+	xxx_messageInfo_AuthToken.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AuthToken proto.InternalMessageInfo
+
+func (m *AuthToken) GetToken() string {
+	if m != nil {
+		return m.Token
+	}
+	return ""
+}
+
 type Void struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -120,7 +198,7 @@ func (m *Void) Reset()         { *m = Void{} }
 func (m *Void) String() string { return proto.CompactTextString(m) }
 func (*Void) ProtoMessage()    {}
 func (*Void) Descriptor() ([]byte, []int) {
-	return fileDescriptor_8bbd6f3875b0e874, []int{2}
+	return fileDescriptor_8bbd6f3875b0e874, []int{4}
 }
 
 func (m *Void) XXX_Unmarshal(b []byte) error {
@@ -144,6 +222,8 @@ var xxx_messageInfo_Void proto.InternalMessageInfo
 func init() {
 	proto.RegisterType((*IsAuthenticated)(nil), "authentication.IsAuthenticated")
 	proto.RegisterType((*UserCredential)(nil), "authentication.UserCredential")
+	proto.RegisterType((*UserId)(nil), "authentication.UserId")
+	proto.RegisterType((*AuthToken)(nil), "authentication.AuthToken")
 	proto.RegisterType((*Void)(nil), "authentication.Void")
 }
 
@@ -152,20 +232,25 @@ func init() {
 }
 
 var fileDescriptor_8bbd6f3875b0e874 = []byte{
-	// 194 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4a, 0x2c, 0x2d, 0xc9,
-	0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x03, 0xb1, 0x53, 0xf3, 0x4a, 0x32, 0x93, 0x13,
-	0x4b, 0x32, 0xf3, 0xf3, 0x94, 0xcc, 0xb9, 0xf8, 0x3d, 0x8b, 0x1d, 0x11, 0x62, 0xa9, 0x29, 0x42,
-	0x2a, 0x5c, 0xbc, 0x89, 0xc8, 0x02, 0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x1c, 0x41, 0xa8, 0x82, 0x4a,
-	0x1e, 0x5c, 0x7c, 0xa1, 0xc5, 0xa9, 0x45, 0xce, 0x45, 0xa9, 0x29, 0x20, 0xc1, 0xc4, 0x1c, 0x21,
-	0x29, 0x2e, 0x8e, 0xd2, 0xe2, 0xd4, 0xa2, 0xbc, 0xc4, 0xdc, 0x54, 0xb0, 0x16, 0xce, 0x20, 0x38,
-	0x1f, 0x24, 0x57, 0x90, 0x58, 0x5c, 0x5c, 0x9e, 0x5f, 0x94, 0x22, 0xc1, 0x04, 0x91, 0x83, 0xf1,
-	0x95, 0xd8, 0xb8, 0x58, 0xc2, 0xf2, 0x33, 0x53, 0x8c, 0x36, 0x33, 0x72, 0xf1, 0x39, 0xa2, 0xb8,
-	0x4e, 0x28, 0x82, 0x4b, 0xd8, 0x39, 0x23, 0x35, 0x39, 0x1b, 0x4d, 0x58, 0x4e, 0x0f, 0xd5, 0x17,
-	0x7a, 0xa8, 0x2e, 0x91, 0x92, 0x47, 0x97, 0x47, 0xf3, 0xa2, 0x12, 0x83, 0x90, 0x3b, 0x17, 0xaf,
-	0x63, 0x4a, 0x0a, 0x92, 0xeb, 0x09, 0x99, 0x29, 0x82, 0x2e, 0x0f, 0x72, 0xb3, 0x12, 0x43, 0x12,
-	0x1b, 0x38, 0x5c, 0x8d, 0x01, 0x01, 0x00, 0x00, 0xff, 0xff, 0x1d, 0x07, 0x72, 0xd7, 0x65, 0x01,
-	0x00, 0x00,
+	// 284 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0xc1, 0x4e, 0x83, 0x40,
+	0x14, 0xa4, 0x5a, 0x49, 0x79, 0xb1, 0x34, 0x59, 0x9b, 0xa6, 0x72, 0xd0, 0xba, 0xf1, 0xe0, 0x89,
+	0x83, 0x1e, 0xbc, 0x4a, 0x30, 0x41, 0xae, 0x44, 0x8d, 0xd7, 0xb5, 0xfb, 0x92, 0x92, 0x5a, 0xb6,
+	0xd9, 0x5d, 0xf4, 0xea, 0xa7, 0x9b, 0xa5, 0x58, 0x60, 0x23, 0xf6, 0xf6, 0x66, 0x86, 0x19, 0xe6,
+	0x3d, 0x00, 0x60, 0xa5, 0x5e, 0x85, 0x5b, 0x29, 0xb4, 0x20, 0xbe, 0x99, 0xb1, 0xd0, 0xf9, 0x92,
+	0xe9, 0x5c, 0x14, 0xf4, 0x1e, 0x26, 0xa9, 0x8a, 0x1a, 0x0e, 0x39, 0xb9, 0x86, 0x31, 0x6b, 0x13,
+	0xf3, 0xc1, 0x62, 0x70, 0x33, 0xca, 0xba, 0x24, 0x7d, 0x02, 0xff, 0x45, 0xa1, 0x8c, 0x25, 0x72,
+	0x43, 0xb2, 0x0f, 0x12, 0xc0, 0xa8, 0x54, 0x28, 0x0b, 0xb6, 0xc1, 0xca, 0xe2, 0x65, 0x7b, 0x6c,
+	0xb4, 0x2d, 0x53, 0xea, 0x4b, 0x48, 0x3e, 0x3f, 0xda, 0x69, 0xbf, 0x98, 0x2e, 0xc0, 0x35, 0x49,
+	0x29, 0x27, 0x33, 0x70, 0xcb, 0x6a, 0xaa, 0xfc, 0xc3, 0xac, 0x46, 0xf4, 0x0a, 0x3c, 0x53, 0xf1,
+	0x59, 0xac, 0xb1, 0x20, 0x53, 0x38, 0xd1, 0x66, 0xa8, 0xdf, 0xb1, 0x03, 0xd4, 0x85, 0xe1, 0xab,
+	0xc8, 0xf9, 0xed, 0xf7, 0x31, 0xf8, 0x51, 0x67, 0x45, 0xf2, 0x06, 0x67, 0xf1, 0x0a, 0x97, 0x6b,
+	0x8b, 0xbe, 0x08, 0xbb, 0xa7, 0x08, 0xbb, 0xeb, 0x04, 0x97, 0xb6, 0x6e, 0xdd, 0x89, 0x3a, 0x24,
+	0x81, 0x71, 0xc4, 0x79, 0xeb, 0x04, 0x87, 0x32, 0xa7, 0xb6, 0x6e, 0x3a, 0x53, 0x87, 0xc4, 0x70,
+	0x9a, 0xa0, 0x6e, 0x76, 0x9c, 0xfd, 0x95, 0x93, 0xf2, 0xe0, 0xdc, 0xe6, 0xf7, 0x16, 0xea, 0x90,
+	0x47, 0x98, 0x64, 0xb8, 0x11, 0x9f, 0xd8, 0xe4, 0xf4, 0x3f, 0xdf, 0x5b, 0xe5, 0x01, 0xbc, 0x04,
+	0x75, 0xfd, 0x41, 0xfe, 0xf1, 0xf7, 0x54, 0xa4, 0xce, 0xbb, 0x5b, 0xfd, 0x69, 0x77, 0x3f, 0x01,
+	0x00, 0x00, 0xff, 0xff, 0xa6, 0x6a, 0x82, 0xf4, 0x77, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -182,6 +267,9 @@ const _ = grpc.SupportPackageIsVersion6
 type AuthenticationClient interface {
 	CheckAuthentication(ctx context.Context, in *UserCredential, opts ...grpc.CallOption) (*IsAuthenticated, error)
 	AddCredential(ctx context.Context, in *UserCredential, opts ...grpc.CallOption) (*Void, error)
+	GetAuthToken(ctx context.Context, in *UserId, opts ...grpc.CallOption) (*AuthToken, error)
+	RemoveAuthToken(ctx context.Context, in *AuthToken, opts ...grpc.CallOption) (*Void, error)
+	GetUserId(ctx context.Context, in *AuthToken, opts ...grpc.CallOption) (*UserId, error)
 }
 
 type authenticationClient struct {
@@ -210,10 +298,40 @@ func (c *authenticationClient) AddCredential(ctx context.Context, in *UserCreden
 	return out, nil
 }
 
+func (c *authenticationClient) GetAuthToken(ctx context.Context, in *UserId, opts ...grpc.CallOption) (*AuthToken, error) {
+	out := new(AuthToken)
+	err := c.cc.Invoke(ctx, "/authentication.Authentication/GetAuthToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authenticationClient) RemoveAuthToken(ctx context.Context, in *AuthToken, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/authentication.Authentication/RemoveAuthToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authenticationClient) GetUserId(ctx context.Context, in *AuthToken, opts ...grpc.CallOption) (*UserId, error) {
+	out := new(UserId)
+	err := c.cc.Invoke(ctx, "/authentication.Authentication/GetUserId", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthenticationServer is the server API for Authentication service.
 type AuthenticationServer interface {
 	CheckAuthentication(context.Context, *UserCredential) (*IsAuthenticated, error)
 	AddCredential(context.Context, *UserCredential) (*Void, error)
+	GetAuthToken(context.Context, *UserId) (*AuthToken, error)
+	RemoveAuthToken(context.Context, *AuthToken) (*Void, error)
+	GetUserId(context.Context, *AuthToken) (*UserId, error)
 }
 
 // UnimplementedAuthenticationServer can be embedded to have forward compatible implementations.
@@ -225,6 +343,15 @@ func (*UnimplementedAuthenticationServer) CheckAuthentication(ctx context.Contex
 }
 func (*UnimplementedAuthenticationServer) AddCredential(ctx context.Context, req *UserCredential) (*Void, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddCredential not implemented")
+}
+func (*UnimplementedAuthenticationServer) GetAuthToken(ctx context.Context, req *UserId) (*AuthToken, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAuthToken not implemented")
+}
+func (*UnimplementedAuthenticationServer) RemoveAuthToken(ctx context.Context, req *AuthToken) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveAuthToken not implemented")
+}
+func (*UnimplementedAuthenticationServer) GetUserId(ctx context.Context, req *AuthToken) (*UserId, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserId not implemented")
 }
 
 func RegisterAuthenticationServer(s *grpc.Server, srv AuthenticationServer) {
@@ -267,6 +394,60 @@ func _Authentication_AddCredential_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Authentication_GetAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServer).GetAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/authentication.Authentication/GetAuthToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServer).GetAuthToken(ctx, req.(*UserId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Authentication_RemoveAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthToken)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServer).RemoveAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/authentication.Authentication/RemoveAuthToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServer).RemoveAuthToken(ctx, req.(*AuthToken))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Authentication_GetUserId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthToken)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthenticationServer).GetUserId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/authentication.Authentication/GetUserId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthenticationServer).GetUserId(ctx, req.(*AuthToken))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Authentication_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "authentication.Authentication",
 	HandlerType: (*AuthenticationServer)(nil),
@@ -278,6 +459,18 @@ var _Authentication_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddCredential",
 			Handler:    _Authentication_AddCredential_Handler,
+		},
+		{
+			MethodName: "GetAuthToken",
+			Handler:    _Authentication_GetAuthToken_Handler,
+		},
+		{
+			MethodName: "RemoveAuthToken",
+			Handler:    _Authentication_RemoveAuthToken_Handler,
+		},
+		{
+			MethodName: "GetUserId",
+			Handler:    _Authentication_GetUserId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
-
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
+	"net/url"
+	"time"
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
+	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 )
 
 // Feed is the Handler for serving request for user's feed
@@ -14,15 +16,17 @@ import (
 func Feed(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		// Get the session from the context
-		sess, ok := session.FromContext(r.Context())
-		if !ok {
-			http.Error(w, "Context has no session", http.StatusInternalServerError)
-			return
-		}
+		//Get user id of the session
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		cookie, err := r.Cookie("sessionId")
+		// if err != nil || cookie.Value != "" {
+		token, _ := url.QueryUnescape(cookie.Value)
+		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// }
 
 		// get the user's feed
-		feed, err := application.GetFeed(sess.Get("userId").(uint64))
+		feed, err := application.GetFeed(user.UserId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

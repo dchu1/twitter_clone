@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"time"
 
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
+
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
+	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 )
 
 // FollowCreateHandler is the Handler for following a user
@@ -24,13 +28,16 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// Get the session from the context
-		sess, ok := session.FromContext(r.Context())
-		if !ok {
-			http.Error(w, "Context has no session", http.StatusInternalServerError)
-			return
-		}
-		application.FollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
+		//Get user id of the session
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		cookie, err := r.Cookie("sessionId")
+		// if err != nil || cookie.Value != "" {
+		token, _ := url.QueryUnescape(cookie.Value)
+		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// }
+
+		application.FollowUser(user.UserId, reqMessage.UserId)
 		APIResponse(w, r, 200, "User followed", make(map[string]string)) // send data to client side
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
@@ -52,13 +59,16 @@ func FollowDestroyHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// Get the session from the context
-		sess, ok := session.FromContext(r.Context())
-		if !ok {
-			http.Error(w, "Context has no session", http.StatusInternalServerError)
-			return
-		}
-		application.UnFollowUser(sess.Get("userId").(uint64), reqMessage.UserId)
+		//Get user id of the session
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		cookie, err := r.Cookie("sessionId")
+		// if err != nil || cookie.Value != "" {
+		token, _ := url.QueryUnescape(cookie.Value)
+		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// }
+
+		application.UnFollowUser(user.UserId, reqMessage.UserId)
 		APIResponse(w, r, 200, "User unfollowed", make(map[string]string)) // send data to client side
 	default:
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
