@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/app"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/auth/session"
+
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
+	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 )
 
 // UserHandler is the handler for /users. It is for getting a list of all users, or a specific user.
@@ -30,12 +34,12 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		reqMessage := handlermodels.GetUserRequest{}
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Post not added", make(map[string]string))
 			return
 		}
 		err = json.Unmarshal(b, &reqMessage)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Post not added", make(map[string]string))
 			return
 		}
 		u := application.GetUser(reqMessage.UserID)
@@ -52,17 +56,20 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		// Get the session from the context
-		sess, ok := session.FromContext(r.Context())
-		if !ok {
-			http.Error(w, "Context has no session", http.StatusInternalServerError)
-			return
-		}
-		users, err := application.GetFollowing(sess.Get("userId").(uint64))
+		//Get user id of the session
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		cookie, err := r.Cookie("sessionId")
+		// if err != nil || cookie.Value != "" {
+		token, _ := url.QueryUnescape(cookie.Value)
+		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// }
+
+		users, err := application.GetFollowing(user.UserId)
 		respMessage := handlermodels.GetUserFollowingResponse{users}
 		body, err := json.Marshal(respMessage)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			APIResponse(w, r, http.StatusInternalServerError, "Cannot get user following list", make(map[string]string))
 		}
 		w.Header().Set("content-type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
@@ -77,13 +84,17 @@ func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 func UserNotFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
-		// Get the session from the context
-		sess, ok := session.FromContext(r.Context())
-		if !ok {
-			http.Error(w, "Context has no session", http.StatusInternalServerError)
-			return
-		}
-		users, err := application.GetNotFollowing(sess.Get("userId").(uint64))
+
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		cookie, err := r.Cookie("sessionId")
+		// if err != nil || cookie.Value != "" {
+		token, _ := url.QueryUnescape(cookie.Value)
+		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// }
+
+		users, err := application.GetNotFollowing(user.UserId)
 		respMessage := handlermodels.GetUserFollowingResponse{users}
 		body, err := json.Marshal(respMessage)
 		if err != nil {

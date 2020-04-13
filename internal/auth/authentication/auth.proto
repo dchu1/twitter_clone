@@ -5,6 +5,10 @@ package authentication;
 service Authentication{
     rpc CheckAuthentication(UserCredential) returns (IsAuthenticated) {}
     rpc AddCredential(UserCredential) returns(Void) {}
+    rpc GetAuthToken(UserId) returns(AuthToken){}
+    rpc RemoveAuthToken(AuthToken) returns(Void){}
+    rpc GetUserId(AuthToken) returns(UserId){}
+
 }
 
 message IsAuthenticated{
@@ -16,4 +20,11 @@ message UserCredential{
     string password = 2;
 }
 
+message UserId{
+    uint64 userId = 1;
+}
+
+message AuthToken{
+    string token = 1;
+}
 message Void {} 
