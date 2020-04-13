@@ -22,6 +22,10 @@ type service struct {
 	userRepo UserRepository
 }
 
+func NewService(ur UserRepository) Service {
+	return &service{ur}
+}
+
 func (s *service) CreateUser(ctx context.Context, info AccountInformation) (uint64, error) {
 	return s.userRepo.CreateUser(ctx, info)
 }

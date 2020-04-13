@@ -3,6 +3,7 @@ package memstorage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
 )
@@ -26,6 +27,7 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, post post.Post) 
 	postEntry := new(postEntry)
 	post.PostID = postRepo.storage.generatePostId()
 	postEntry.post = &post
+	postEntry.post.Timestamp = time.Now()
 	postRepo.storage.posts[post.PostID] = postEntry
 	return post.PostID, nil
 }

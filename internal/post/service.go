@@ -18,6 +18,10 @@ type service struct {
 	postRepo PostRepository
 }
 
+func NewService(pr PostRepository) Service {
+	return &service{pr}
+}
+
 func (s *service) CreatePost(ctx context.Context, p Post) (uint64, error) {
 	return s.postRepo.CreatePost(ctx, p)
 }
