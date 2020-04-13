@@ -19,24 +19,8 @@ func RegisterClients() {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-<<<<<<< HEAD
-	defer conn.Close()
-	AuthClient = authpb.NewAuthenticationClient(conn)
-
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	// defer cancel()
-	// res, err := AuthClient.CheckAuthentication(ctx, &AuthClient.UserCredential{Username: "smit", Password: "smit"})
-	// if err != nil {
-	// 	log.Fatalf("could not greet: %v", err)
-	// }
-	// log.Printf("Is client authenticated:  %v", res.Authenticated)
-=======
 	// defer conn.Close()
 	AuthClient = authpb.NewAuthenticationClient(conn)
-
-
->>>>>>> 9b1a121f28d193a78fd90b6e2214381a30ebafa9
-
 }
 
 func init() {
