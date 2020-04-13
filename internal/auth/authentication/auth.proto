@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package authentication;
+
+service Authentication{
+    rpc CheckAuthentication(UserCredential) returns (IsAuthenticated) {}
+    rpc AddCredential(UserCredential) returns(Void) {}
+}
+
+message IsAuthenticated{
+    bool authenticated = 1;
+}
+
+message UserCredential{
+    string username = 1;
+    string password = 2;
+}
+
+message Void {} 
