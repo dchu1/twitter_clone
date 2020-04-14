@@ -3,7 +3,7 @@ package memstorage
 import (
 	"sync"
 
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
+	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
 )
 
 var PostStorage *postStorage
@@ -16,15 +16,15 @@ type postStorage struct {
 }
 
 type postEntry struct {
-	mu   sync.Mutex // protects Post
-	post *post.Post
+	mu   sync.RWMutex // protects Post
+	post *pb.Post
 }
 
 func NewPostStorage() *postStorage {
 	return &postStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*postEntry), 0}
 }
 
-func InitPostStorage() {
+func init() {
 	PostStorage = NewPostStorage()
 }
 

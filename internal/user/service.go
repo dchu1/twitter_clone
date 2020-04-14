@@ -3,53 +3,57 @@ package user
 import (
 	"context"
 	"errors"
+
+	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
 
-// Service is the interface that provides app methods.
-type Service interface {
-	CreateUser(context.Context, AccountInformation) (uint64, error)
-	GetUser(context.Context, uint64) (*User, error)
-	GetUsers(context.Context, []uint64) ([]*User, error)
-	GetFollowing(context.Context, uint64) ([]*User, error)
-	GetNotFollowing(context.Context, uint64) ([]*User, error)
-	UpdateUserAccountInfo(context.Context, AccountInformation) error
-	FollowUser(context.Context, uint64, uint64) error
-	UnFollowUser(context.Context, uint64, uint64) error
-	DeleteUser(context.Context, uint64) error
-}
-
-type service struct {
+type userServiceServer struct {
 	userRepo UserRepository
+	pb.UnimplementedUserServiceServer
 }
 
-func NewService(ur UserRepository) Service {
-	return &service{ur}
+func (s *userServiceServer) CreateUser(ctx context.Context, info *pb.AccountInformation) (*pb.UserId, error) {
+	// Check whether user already exists
+	userObj, _ := s.userRepo.GetUserByUsername(ctx, info.Email)
+	if userObj != nil {
+		return &pb.UserId{}, errors.New("duplicate email")
+	}
+
+	uid, err := s.userRepo.CreateUser(ctx, info)
+	return &pb.UserId{UserId: uid}, err
+}
+func (s *userServiceServer) GetUser(ctx context.Context, req *pb.UserId) (*pb.User, error) {
+	return s.userRepo.GetUser(ctx, req.GetUserId())
+}
+func (s *userServiceServer) GetUsers(ctx context.Context, req *pb.UserIds) (*pb.UserList, error) {
+	users, err := s.userRepo.GetUsers(ctx, req.GetUserIds())
+	return &pb.UserList{UserList: users}, err
+}
+func (s *userServiceServer) GetFollowing(ctx context.Context, req *pb.UserId) (*pb.UserList, error) {
+	users, err := s.userRepo.GetFollowing(ctx, req.GetUserId())
+	return &pb.UserList{UserList: users}, err
+}
+func (s *userServiceServer) GetNotFollowing(ctx context.Context, req *pb.UserId) (*pb.UserList, error) {
+	users, err := s.userRepo.GetNotFollowing(ctx, req.GetUserId())
+	return &pb.UserList{UserList: users}, err
+}
+func (s *userServiceServer) FollowUser(ctx context.Context, req *pb.FollowRequest) (*pb.Void, error) {
+	if req.GetUserId() == req.GetFollowUserId() {
+		return &pb.Void{}, errors.New("duplicate user ids")
+	}
+	return &pb.Void{}, s.userRepo.FollowUser(ctx, req.GetUserId(), req.GetFollowUserId())
+}
+func (s *userServiceServer) UnFollowUser(ctx context.Context, req *pb.UnFollowRequest) (*pb.Void, error) {
+	if req.GetUserId() == req.GetFollowUserId() {
+		return &pb.Void{}, errors.New("duplicate user ids")
+	}
+	return &pb.Void{}, s.userRepo.UnFollowUser(ctx, req.GetUserId(), req.GetFollowUserId())
+}
+func (s *userServiceServer) GetUserIdByUsername(ctx context.Context, req *pb.UserName) (*pb.UserId, error) {
+	user, err := s.userRepo.GetUserByUsername(ctx, req.GetEmail())
+	return &pb.UserId{UserId: user.AccountInformation.UserId}, err
 }
 
-func (s *service) CreateUser(ctx context.Context, info AccountInformation) (uint64, error) {
-	return s.userRepo.CreateUser(ctx, info)
-}
-func (s *service) GetUser(ctx context.Context, userID uint64) (*User, error) {
-	return s.userRepo.GetUser(ctx, userID)
-}
-func (s *service) GetUsers(ctx context.Context, userIDs []uint64) ([]*User, error) {
-	return s.userRepo.GetUsers(ctx, userIDs)
-}
-func (s *service) GetFollowing(ctx context.Context, userID uint64) ([]*User, error) {
-	return s.userRepo.GetFollowing(ctx, userID)
-}
-func (s *service) GetNotFollowing(ctx context.Context, userID uint64) ([]*User, error) {
-	return s.userRepo.GetNotFollowing(ctx, userID)
-}
-func (s *service) UpdateUserAccountInfo(ctx context.Context, info AccountInformation) error {
-	return errors.New("Feature not implemented")
-}
-func (s *service) FollowUser(ctx context.Context, source uint64, target uint64) error {
-	return s.userRepo.FollowUser(ctx, source, target)
-}
-func (s *service) UnFollowUser(ctx context.Context, source uint64, target uint64) error {
-	return s.userRepo.UnFollowUser(ctx, source, target)
-}
-func (s *service) DeleteUser(ctx context.Context, userID uint64) error {
-	return errors.New("Feature not implemented")
+func GetUserServiceServer(ur *UserRepository) *userServiceServer {
+	return &userServiceServer{userRepo: *ur}
 }

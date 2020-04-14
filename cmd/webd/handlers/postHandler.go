@@ -12,7 +12,7 @@ import (
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
-	// authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
+	postpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
 )
 
 // PostHandler is the handler for /post. It is used to create posts
@@ -41,7 +41,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		// // }
 		// fmt.Println(user)
 		user := r.Context().Value("user").(*authpb.UserId)
-		err = application.CreatePost(user.UserId, reqMessage.Message)
+		_, err = PostServiceClient.CreatePost(r.Context(), &postpb.Post{UserId: user.UserId, Message: reqMessage.Message})
+		//err = application.CreatePost(user.UserId, reqMessage.Message)
+
 		if err != nil {
 			APIResponse(w, r, http.StatusInternalServerError, "Post not added", make(map[string]string))
 			return

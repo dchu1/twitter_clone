@@ -1,17 +1,15 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/app"
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
+	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
 
 // UserHandler is the handler for /users. It is for getting a list of all users, or a specific user.
@@ -56,18 +54,24 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 func UserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		//Get user id of the session
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		cookie, err := r.Cookie("sessionId")
-		// if err != nil || cookie.Value != "" {
-		token, _ := url.QueryUnescape(cookie.Value)
-		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
-		// }
-
-		users, err := application.GetFollowing(user.UserId)
-		respMessage := handlermodels.GetUserFollowingResponse{users}
-		body, err := json.Marshal(respMessage)
+		// //Get user id of the session
+		// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		// defer cancel()
+		// cookie, err := r.Cookie("sessionId")
+		// // if err != nil || cookie.Value != "" {
+		// token, _ := url.QueryUnescape(cookie.Value)
+		// user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// // }
+		user := r.Context().Value("user").(*authpb.UserId)
+		users, err := UserServiceClient.GetFollowing(r.Context(), &userpb.UserId{UserId: user.UserId})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// //users, err := application.GetFollowing(user.UserId)
+		// respMessage := handlermodels.GetUserFollowingResponse{users.UserList}
+		// body, err := json.Marshal(respMessage)
+		body, err := json.Marshal(users.UserList)
 		if err != nil {
 			APIResponse(w, r, http.StatusInternalServerError, "Cannot get user following list", make(map[string]string))
 		}
@@ -85,17 +89,24 @@ func UserNotFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET": // FOR TESTING
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		cookie, err := r.Cookie("sessionId")
-		// if err != nil || cookie.Value != "" {
-		token, _ := url.QueryUnescape(cookie.Value)
-		user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
-		// }
+		// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		// defer cancel()
+		// cookie, err := r.Cookie("sessionId")
+		// // if err != nil || cookie.Value != "" {
+		// token, _ := url.QueryUnescape(cookie.Value)
+		// user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
+		// // }
 
-		users, err := application.GetNotFollowing(user.UserId)
-		respMessage := handlermodels.GetUserFollowingResponse{users}
-		body, err := json.Marshal(respMessage)
+		//users, err := application.GetNotFollowing(user.UserId)
+		user := r.Context().Value("user").(*authpb.UserId)
+		users, err := UserServiceClient.GetNotFollowing(r.Context(), &userpb.UserId{UserId: user.UserId})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// respMessage := handlermodels.GetUserFollowingResponse{users.UserList}
+		// body, err := json.Marshal(respMessage)
+		body, err := json.Marshal(users.UserList)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

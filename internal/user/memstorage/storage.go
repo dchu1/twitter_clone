@@ -18,7 +18,7 @@ func NewUserStorage() *userStorage {
 	return &userStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*userEntry), 0}
 }
 
-func InitUserStorage() {
+func init() {
 	UserStorage = NewUserStorage()
 }
 

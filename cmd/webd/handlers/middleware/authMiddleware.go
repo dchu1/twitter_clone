@@ -15,6 +15,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("sessionId")
 		if err != nil {
 			http.Error(w, "Invalid session", http.StatusUnauthorized)
+			return
 		}
 		token, _ := url.QueryUnescape(cookie.Value)
 		user, err := handlers.AuthClient.GetUserId(r.Context(), &authpb.AuthToken{Token: token})

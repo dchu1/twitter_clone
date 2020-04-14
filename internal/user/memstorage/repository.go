@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
+	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
 
 type userRepository struct {
@@ -15,7 +17,7 @@ type userRepository struct {
 type userEntry struct {
 	followingRWMu sync.RWMutex // protects following map
 	followersRWMu sync.RWMutex // protects followers map
-	user          *user.User
+	user          *pb.User
 }
 
 func GetUserRepository() user.UserRepository {
@@ -27,42 +29,39 @@ func NewUserRepository(storage *userStorage) user.UserRepository {
 }
 
 // CreateUser adds a user to the appropriate data structures
-func (userRepository *userRepository) CreateUser(ctx context.Context, info user.AccountInformation) (uint64, error) {
-	// Check whether user already exists
-	userObj, _ := userRepository.GetUserByUsername(ctx, info.Email)
-	if userObj != nil {
-		return 0, errors.New("duplicate email")
-	}
-
-	info.UserID = userRepository.storage.generateUserId()
+func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.AccountInformation) (uint64, error) {
+	info.UserId = userRepo.storage.generateUserId()
 	newUserEntry := new(userEntry)
-	newUserEntry.user = user.NewUser(info)
+	newUserEntry.user = new(pb.User)
+	newUserEntry.user.AccountInformation = info
+	newUserEntry.user.Followers = make(map[uint64]uint64)
+	newUserEntry.user.Following = make(map[uint64]uint64)
 
-	userRepository.storage.usersRWMu.Lock()
-	userRepository.storage.users[info.UserID] = newUserEntry
-	userRepository.storage.usersRWMu.Unlock()
+	userRepo.storage.usersRWMu.Lock()
+	userRepo.storage.users[info.UserId] = newUserEntry
+	userRepo.storage.usersRWMu.Unlock()
 
-	return info.UserID, nil
+	return info.UserId, nil
 }
 
 // GetUser creates a deep copy of the specified users.
-func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*user.User, error) {
+func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
 	userEntry, exists := userRepo.storage.users[userID]
 	if !exists {
 		return nil, errors.New("user not found")
 	}
-	return userEntry.user.Clone(), nil
+	return userEntry.user, nil
 }
 
 // GetUsers creates a deep copy of the specified users.
-func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) ([]*pb.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
-	cp := make([]*user.User, 0, len(userIDs))
+	cp := make([]*pb.User, 0, len(userIDs))
 	for _, v := range userIDs {
-		cp = append(cp, userRepo.storage.users[v].user.Clone())
+		cp = append(cp, userRepo.storage.users[v].user)
 	}
 	return cp, nil
 }
@@ -80,7 +79,7 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 		return err
 	}
 	followingUserIDObject.followingRWMu.Lock()
-	followingUserIDObject.user.Following[UserIDToFollow] = struct{}{}
+	followingUserIDObject.user.Following[UserIDToFollow] = UserIDToFollow
 	// newfollowing := followingUserIDObject.user.Following
 	// newfollowing[UserIDToFollow] = struct{}{}
 	// followingUserIDObject.user.Following = newfollowing
@@ -92,7 +91,7 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 		return err
 	}
 	UserIDToFollowObject.followersRWMu.Lock()
-	UserIDToFollowObject.user.Followers[followingUserID] = struct{}{}
+	UserIDToFollowObject.user.Followers[followingUserID] = followingUserID
 	// newfollowers := UserIDToFollowObject.user.Followers
 	// newfollowers[followingUserID] = struct{}{}
 	// UserIDToFollowObject.user.Followers = newfollowers
@@ -133,28 +132,20 @@ func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserI
 	return nil
 }
 
-// // ValidateCredentials checks whether the given username and password match
-// // those stored in the credentials map
-// func (appList *App) ValidateCredentials(username string, password string) bool {
-// 	appList.credentialsRWMu.RLock()
-// 	defer appList.credentialsRWMu.RUnlock()
-// 	return appList.credentials[username] == password
-// }
-
 // GetUserByUsername returns a user object by their username
-func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email string) (*user.User, error) {
+func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email string) (*pb.User, error) {
 	userRepo.storage.usersRWMu.RLock()
 	defer userRepo.storage.usersRWMu.RUnlock()
 	for _, v := range userRepo.storage.users {
 		if v.user.AccountInformation.Email == email {
-			return v.user.Clone(), nil
+			return v.user, nil
 		}
 	}
 	return nil, errors.New("user not found")
 }
 
 // GetFollowing returns an array of users that the given user is following
-func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
 	// Get the user object from the users map
 	userEntry, err := userRepo.storage.getUserEntry(userId)
 	if err != nil {
@@ -163,7 +154,7 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 	userEntry.followingRWMu.RLock()
 	defer userEntry.followingRWMu.RUnlock()
 
-	tempArray := make([]*user.User, 0, 100)
+	tempArray := make([]*pb.User, 0, 100)
 	for k := range userEntry.user.Following {
 		followingEntry, err := userRepo.storage.getUserEntry(k)
 		if err != nil {
@@ -171,13 +162,13 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 			// with our user structure
 			panic("database corruption")
 		}
-		tempArray = append(tempArray, followingEntry.user.Clone())
+		tempArray = append(tempArray, followingEntry.user)
 	}
 	return tempArray, nil
 }
 
 // GetNotFollowing returns an array of users that the given user is not following
-func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint64) ([]*user.User, error) {
+func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
 	// Get the user object from the users map
 	userEntry, err := userRepo.storage.getUserEntry(userId)
 	if err != nil {
@@ -186,7 +177,7 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 	userEntry.followingRWMu.RLock()
 	defer userEntry.followingRWMu.RUnlock()
 
-	tempArray := make([]*user.User, 0, 100)
+	tempArray := make([]*pb.User, 0, 100)
 
 	// Iterate through entire user list
 	userRepo.storage.usersRWMu.RLock()
@@ -196,7 +187,7 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 		// temp array
 		_, exists := userEntry.user.Following[k]
 		if !exists && k != userId {
-			tempArray = append(tempArray, v.user.Clone())
+			tempArray = append(tempArray, v.user)
 		}
 	}
 	return tempArray, nil
@@ -205,6 +196,6 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) error {
 	return errors.New("Feature not implemented")
 }
-func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info user.AccountInformation) error {
+func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
 	return errors.New("Feature not implemented")
 }

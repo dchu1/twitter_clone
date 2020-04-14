@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package userpb;
+
+service UserService{
+    rpc CreateUser(AccountInformation) returns (UserId) {}
+    rpc GetUser(UserId) returns (User) {}
+    rpc GetUsers(UserIds) returns (UserList) {}
+    rpc FollowUser(FollowRequest) returns (Void) {}
+    rpc UnFollowUser(UnFollowRequest) returns (Void) {}
+    rpc GetFollowing(UserId) returns (UserList) {}
+    rpc GetNotFollowing(UserId) returns (UserList) {}
+    rpc GetUserIdByUsername(UserName) returns (UserId) {}
+}
+
+message Void{}
+
+message AccountInformation{
+        string firstName  = 1;
+        string lastName = 2;
+        string email = 3 ;
+        uint64 userId  = 4;
+    }
+
+message User{
+    AccountInformation accountInformation = 1;
+    map<uint64, uint64> followers = 2;
+    map<uint64, uint64> following = 3;
+}
+
+message FollowRequest{
+    uint64 userId  = 1;
+    uint64 followUserId = 2;
+}
+
+message UnFollowRequest{
+    uint64 userId  = 1;
+    uint64 followUserId = 2;
+}
+
+message FollowerUserIds {
+    repeated uint64 userIds = 1;
+}
+
+message UserId {
+    uint64 userId = 1;
+}
+
+message UserIds {
+    repeated uint64 userIds = 1;
+}
+
+message UserName {
+    string email = 1;
+}
+
+message UserList {
+    repeated User userList = 1;
+}

@@ -8,10 +8,9 @@ import (
 	"net/url"
 	"time"
 
-
-
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
+	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
 
 // Login is the handler for /login
@@ -29,19 +28,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	res, err := AuthClient.CheckAuthentication(ctx, &authpb.UserCredential{Username: user.Email, Password: user.Password})
 
-
 	if err != nil {
 		APIResponse(w, r, http.StatusUnauthorized, "Login unsuccessful", make(map[string]string)) // send data to client side
 	}
 
 	if res.Authenticated {
-		user, err := application.GetUserByUsername(user.Email)
+		user, err := UserServiceClient.GetUserIdByUsername(r.Context(), &userpb.UserName{Email: user.Email})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		authToken, err := AuthClient.GetAuthToken(ctx, &authpb.UserId{UserId: user.Id})
+		authToken, err := AuthClient.GetAuthToken(ctx, &authpb.UserId{UserId: user.UserId})
 		if err != nil {
 			APIResponse(w, r, http.StatusUnauthorized, "Login unsuccessful", make(map[string]string)) // send data to client side
 		}

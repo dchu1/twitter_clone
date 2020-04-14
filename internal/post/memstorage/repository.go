@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
+	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
+	"github.com/golang/protobuf/ptypes"
 )
 
 type postRepository struct {
@@ -21,19 +23,19 @@ func NewPostRepository(storage *postStorage) post.PostRepository {
 }
 
 // CreatePost inserts a post into our post map
-func (postRepo *postRepository) CreatePost(ctx context.Context, post post.Post) (uint64, error) {
+func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uint64, error) {
 	postRepo.storage.postsRWMu.Lock()
 	defer postRepo.storage.postsRWMu.Unlock()
 	postEntry := new(postEntry)
-	post.PostID = postRepo.storage.generatePostId()
-	postEntry.post = &post
-	postEntry.post.Timestamp = time.Now()
-	postRepo.storage.posts[post.PostID] = postEntry
-	return post.PostID, nil
+	p.PostID = postRepo.storage.generatePostId()
+	postEntry.post = p
+	postEntry.post.Timestamp, _ = ptypes.TimestampProto(time.Now())
+	postRepo.storage.posts[p.PostID] = postEntry
+	return p.PostID, nil
 }
 
 // GetPosts retrieves an array of post from the post map
-func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*post.Post, error) {
+func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb.Post, error) {
 	postRepo.storage.postsRWMu.RLock()
 	defer postRepo.storage.postsRWMu.RUnlock()
 	postEntry, exists := postRepo.storage.posts[postID]
@@ -45,17 +47,39 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*po
 }
 
 // GetPosts retrieves an array of post from the post map
-func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) ([]*post.Post, error) {
+func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) ([]*pb.Post, error) {
 	postRepo.storage.postsRWMu.RLock()
 	defer postRepo.storage.postsRWMu.RUnlock()
-	postArr := make([]*post.Post, 0, len(postIDs))
+	postArr := make([]*pb.Post, 0, len(postIDs))
 	for _, v := range postIDs {
-		postArr = append(postArr, postRepo.storage.posts[v].post)
+		postEntry, exists := postRepo.storage.posts[v]
+		if !exists {
+			return postArr, errors.New("post not found")
+		}
+		postArr = append(postArr, postEntry.post)
 	}
 	return postArr, nil
 }
 
-func (postRepo *postRepository) UpdatePost(ctx context.Context, post post.Post) error {
+// GetPosts retrieves an array of post from the post map
+func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []uint64) ([]*pb.Post, error) {
+	postRepo.storage.postsRWMu.RLock()
+	defer postRepo.storage.postsRWMu.RUnlock()
+	postArr := make([]*pb.Post, 0, len(userIDs)*100)
+	for _, v := range postRepo.storage.posts {
+		v.mu.RLock()
+		for _, u := range userIDs {
+			if v.post.UserId == u {
+				postArr = append(postArr, v.post)
+				break
+			}
+		}
+		v.mu.RUnlock()
+	}
+	return postArr, nil
+}
+
+func (postRepo *postRepository) UpdatePost(ctx context.Context, p pb.Post) error {
 	return errors.New("Feature not implemented")
 }
 
