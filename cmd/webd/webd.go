@@ -5,8 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/app"
-
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/config"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/middleware"
@@ -17,8 +15,6 @@ import (
 func main() {
 	// Read config
 	cfg := config.GetConfig(".")
-
-	handlers.SetState(app.MakeApp())
 
 	mux := http.NewServeMux()
 	// mux.HandleFunc("/login", handlers.Login)

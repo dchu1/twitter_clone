@@ -66,6 +66,16 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 	return cp, nil
 }
 
+func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, error) {
+	userRepo.storage.usersRWMu.RLock()
+	defer userRepo.storage.usersRWMu.RUnlock()
+	tempArr := make([]*pb.User, 0, len(userRepo.storage.users))
+	for _, u := range userRepo.storage.users {
+		tempArr = append(tempArr, u.user)
+	}
+	return tempArr, nil
+}
+
 // FollowUser updates the following user's following map, and the followed user's followers map
 // to reflect that a user is following another user
 func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID uint64, UserIDToFollow uint64) error {

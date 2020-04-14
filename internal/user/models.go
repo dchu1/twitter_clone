@@ -25,6 +25,7 @@ type UserRepository interface {
 	CreateUser(context.Context, *pb.AccountInformation) (uint64, error)
 	GetUser(context.Context, uint64) (*pb.User, error)
 	GetUsers(context.Context, []uint64) ([]*pb.User, error)
+	GetAllUsers(context.Context) ([]*pb.User, error)
 	GetUserByUsername(context.Context, string) (*pb.User, error)
 	GetFollowing(context.Context, uint64) ([]*pb.User, error)
 	GetNotFollowing(context.Context, uint64) ([]*pb.User, error)

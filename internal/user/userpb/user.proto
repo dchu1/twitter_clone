@@ -6,6 +6,7 @@ service UserService{
     rpc CreateUser(AccountInformation) returns (UserId) {}
     rpc GetUser(UserId) returns (User) {}
     rpc GetUsers(UserIds) returns (UserList) {}
+    rpc GetAllUsers(Void) returns (UserList) {}
     rpc FollowUser(FollowRequest) returns (Void) {}
     rpc UnFollowUser(UnFollowRequest) returns (Void) {}
     rpc GetFollowing(UserId) returns (UserList) {}

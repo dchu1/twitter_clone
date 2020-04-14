@@ -21,7 +21,7 @@ type postEntry struct {
 }
 
 func NewPostStorage() *postStorage {
-	return &postStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*postEntry), 0}
+	return &postStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*postEntry), 1}
 }
 
 func init() {

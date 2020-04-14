@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -19,9 +18,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		token, _ := url.QueryUnescape(cookie.Value)
 		user, err := handlers.AuthClient.GetUserId(r.Context(), &authpb.AuthToken{Token: token})
-		// }
 		ctx := context.WithValue(r.Context(), "user", user)
-		fmt.Println(user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

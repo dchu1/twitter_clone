@@ -25,16 +25,8 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		//Get user id of the session
-		// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		// defer cancel()
-		// cookie, err := r.Cookie("sessionId")
-		// // if err != nil || cookie.Value != "" {
-		// token, _ := url.QueryUnescape(cookie.Value)
-		// user, err := AuthClient.GetUserId(ctx, &authpb.AuthToken{Token: token})
-		// // }
+
 		user := r.Context().Value("user").(*authpb.UserId)
-		//application.FollowUser(user.UserId, reqMessage.UserId)
 		_, err = UserServiceClient.FollowUser(r.Context(), &userpb.FollowRequest{UserId: user.UserId, FollowUserId: reqMessage.UserId})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

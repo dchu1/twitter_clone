@@ -15,7 +15,7 @@ type userStorage struct {
 }
 
 func NewUserStorage() *userStorage {
-	return &userStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*userEntry), 0}
+	return &userStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*userEntry), 1}
 }
 
 func init() {

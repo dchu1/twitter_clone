@@ -29,6 +29,10 @@ func (s *userServiceServer) GetUsers(ctx context.Context, req *pb.UserIds) (*pb.
 	users, err := s.userRepo.GetUsers(ctx, req.GetUserIds())
 	return &pb.UserList{UserList: users}, err
 }
+func (s *userServiceServer) GetAllUsers(ctx context.Context, req *pb.Void) (*pb.UserList, error) {
+	users, err := s.userRepo.GetAllUsers(ctx)
+	return &pb.UserList{UserList: users}, err
+}
 func (s *userServiceServer) GetFollowing(ctx context.Context, req *pb.UserId) (*pb.UserList, error) {
 	users, err := s.userRepo.GetFollowing(ctx, req.GetUserId())
 	return &pb.UserList{UserList: users}, err
