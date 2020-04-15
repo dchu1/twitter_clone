@@ -44,34 +44,32 @@ func (s *authRepository) CheckAuthentication(ctx context.Context, user *pb.UserC
 }
 
 func (s *authRepository) AddCredential(ctx context.Context, user *pb.UserCredential) (*pb.Void, error) {
-	result := make(chan *pb.Void, 1)
 	errorchan := make(chan error, 1)
 
 	go func() {
 		UsersCredRWmu.Lock()
 		defer UsersCredRWmu.Unlock()
 		UsersCred[user.Username] = user.Password
-		result <- nil
+		errorchan <- nil
 	}()
 
 	select {
-	case res := <-result:
-		return res, nil
 	case err := <-errorchan:
-		return nil, err
+		return &pb.Void{}, err
 	case <-ctx.Done():
 		go func() {
 			select {
-			case <-result:
-				UsersCredRWmu.Lock()
-				defer UsersCredRWmu.Unlock()
-				delete(UsersCred, user.Username)
-				return
-			case <-errorchan:
+			case err := <-errorchan:
+				if err != nil {
+					UsersCredRWmu.Lock()
+					defer UsersCredRWmu.Unlock()
+					delete(UsersCred, user.Username)
+					return
+				}
 				return
 			}
 		}()
-		return nil, ctx.Err()
+		return &pb.Void{}, ctx.Err()
 	}
 }
 
@@ -115,7 +113,7 @@ func (s *authRepository) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken
 
 	select {
 	case err := <-errorchan:
-		return nil, err
+		return &pb.Void{}, err
 	case <-ctx.Done():
 		go func() {
 			select {
@@ -128,7 +126,7 @@ func (s *authRepository) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken
 				return
 			}
 		}()
-		return nil, ctx.Err()
+		return &pb.Void{}, ctx.Err()
 	}
 }
 
