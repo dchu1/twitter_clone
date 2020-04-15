@@ -20,8 +20,8 @@ Configure backend url in cmd/frontend/src/environment
 The frontend will listen on port 4200 by default.
 
 # Running the backend
-    cd cmd/webd
-    go run webd.go
+    cd cmd
+    runServers.bat
 
 The backend server will listen on port 9090 by default.
 The port can be changed in the cmd/webd/config.toml file.
