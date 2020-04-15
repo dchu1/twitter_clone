@@ -3,11 +3,9 @@ package memstorage
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
-	"github.com/golang/protobuf/ptypes"
 )
 
 type postRepository struct {
@@ -26,18 +24,7 @@ func NewPostRepository(storage *postStorage) post.PostRepository {
 func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uint64, error) {
 	result := make(chan uint64, 1)
 	errorchan := make(chan error, 1)
-	go func() {
-
-		postRepo.storage.postsRWMu.Lock()
-		defer postRepo.storage.postsRWMu.Unlock()
-		postEntry := new(postEntry)
-		p.PostID = postRepo.storage.generatePostId()
-		postEntry.post = p
-		postEntry.post.Timestamp, _ = ptypes.TimestampProto(time.Now())
-		postRepo.storage.posts[p.PostID] = postEntry
-		result <- p.PostID
-
-	}()
+	go postRepo.storage.createPost(p, result, errorchan)
 
 	select {
 	case postID := <-result:
@@ -67,18 +54,7 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 	result := make(chan *pb.Post, 1)
 	errorchan := make(chan error, 1)
 
-	go func() {
-		postRepo.storage.postsRWMu.RLock()
-		defer postRepo.storage.postsRWMu.RUnlock()
-		postEntry, exists := postRepo.storage.posts[postID]
-		if !exists {
-			errorchan <- errors.New("user not found")
-		} else {
-			p := *postEntry.post
-			result <- &p
-		}
-
-	}()
+	go postRepo.storage.getPost(postID, result, errorchan)
 
 	select {
 	case post := <-result:
@@ -95,18 +71,7 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 	result := make(chan []*pb.Post, 1)
 	errorchan := make(chan error, 1)
 
-	go func() {
-
-		postRepo.storage.postsRWMu.RLock()
-		defer postRepo.storage.postsRWMu.RUnlock()
-		postArr := make([]*pb.Post, 0, len(postIDs))
-		for _, v := range postIDs {
-			postEntry, _ := postRepo.storage.posts[v]
-			postArr = append(postArr, postEntry.post)
-		}
-		result <- postArr
-
-	}()
+	go postRepo.storage.getPosts(postIDs, result, errorchan)
 
 	select {
 	case posts := <-result:
@@ -123,22 +88,7 @@ func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []
 	result := make(chan []*pb.Post, 1)
 	errorchan := make(chan error, 1)
 
-	go func() {
-		postRepo.storage.postsRWMu.RLock()
-		defer postRepo.storage.postsRWMu.RUnlock()
-		postArr := make([]*pb.Post, 0, len(userIDs)*100)
-		for _, v := range postRepo.storage.posts {
-			v.mu.RLock()
-			for _, u := range userIDs {
-				if v.post.UserId == u {
-					postArr = append(postArr, v.post)
-					break
-				}
-			}
-			v.mu.RUnlock()
-		}
-		result <- postArr
-	}()
+	go postRepo.storage.getPostsByAuthor(userIDs, result, errorchan)
 
 	select {
 	case posts := <-result:
@@ -155,38 +105,27 @@ func (postRepo *postRepository) UpdatePost(ctx context.Context, p pb.Post) error
 }
 
 func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) error {
-	result := make(chan error, 1)
+	errorchan := make(chan error, 1)
 	buffer := make(chan *postEntry, 1)
-	go func() {
-		postRepo.storage.postsRWMu.Lock()
-		defer postRepo.storage.postsRWMu.Unlock()
-		postEntry, exists := postRepo.storage.posts[postID]
-		if !exists {
-			result <- nil
-			return
-		}
-		delete(postRepo.storage.posts, postID)
-		buffer <- postEntry
-		result <- nil
-	}()
+	go postRepo.storage.deletePost(postID, errorchan, buffer)
 
 	select {
-	case ret := <-result:
-		return ret
+	case err := <-errorchan:
+		return err
 	case <-ctx.Done():
 		// if ctx done, need to continue to listen to know whether to add postEntry back into db
 		go func() {
 			select {
-			case postEntry := <-buffer:
+			case err := <-errorchan:
+				// if result != nil, an error occurred and so don't need to add back into db
+				if err != nil {
+					return
+				}
+				postEntry := <-buffer
 				postRepo.storage.postsRWMu.Lock()
 				defer postRepo.storage.postsRWMu.Unlock()
 				postRepo.storage.posts[postID] = postEntry
 				return
-			case <-result:
-				// if result != nil, an error occurred and so don't need to add back into db
-				if result != nil {
-					return
-				}
 			}
 
 		}()

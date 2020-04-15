@@ -3,7 +3,6 @@ package memstorage
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
@@ -12,12 +11,6 @@ import (
 
 type userRepository struct {
 	storage *userStorage
-}
-
-type userEntry struct {
-	followingRWMu sync.RWMutex // protects following map
-	followersRWMu sync.RWMutex // protects followers map
-	user          *pb.User
 }
 
 // GetUserRepository returns a UserRepository that uses package level storage
