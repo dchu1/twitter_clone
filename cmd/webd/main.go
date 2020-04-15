@@ -5,16 +5,19 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/config"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/middleware"
-
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/config"
 	"github.com/rs/cors"
+	"github.com/spf13/viper"
 )
 
 func main() {
 	// Read config
-	cfg := config.GetConfig(".")
+	config.NewConfig(".")
+
+	// Register grpc clients
+	handlers.RegisterClients()
 
 	mux := http.NewServeMux()
 	// mux.HandleFunc("/login", handlers.Login)
@@ -51,8 +54,8 @@ func main() {
 
 	handler := cors.Default().Handler(mux)
 	handler = c.Handler(handler)
-	fmt.Println("Server running on port", cfg.Server.Port)
-	err := http.ListenAndServe(":"+cfg.Server.Port, handler) // set listen port
+	fmt.Println("Server running on port", viper.GetStringSlice("webserver.ports")[0])
+	err := http.ListenAndServe(":"+viper.GetStringSlice("webserver.ports")[0], handler) // set listen port
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
