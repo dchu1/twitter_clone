@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"strconv"
+	"time"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/memstorage"
 	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
@@ -78,6 +79,7 @@ func TestUnFollowUser(t *testing.T) {
 		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 2: %v", u2.Following))
 	}
 }
+
 func TestContextAddUser(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -157,5 +159,98 @@ func TestConcurrentFollow(t *testing.T) {
 		if len(user.Following)!= (numUsers-1){
 			t.Error(fmt.Sprintf("Following map of user %d ",i))
 		}
+	}
+}
+
+func TestContextTimeoutAddUser(t *testing.T) {
+	duration := 150 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	
+	// Mock repository with 10 seconds delay for accessing database
+	userRepo := memstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
+	
+	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+	userApp.CreateUser(ctx, &expected_user)
+
+	users, _ := userApp.GetAllUsers(context.Background(), nil)
+	if len(users.UserList)>0{
+		t.Error(fmt.Sprintf("Test Failed: User added even when context was cancelled"))
+	}
+	cancel()
+}
+
+
+func TestContextTimeoutFollowUser(t *testing.T) {
+
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
+
+	// Mock repository with 10 seconds delay for accessing database
+	userRepo := memstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
+
+	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
+	User1ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User1First", LastName: "User1Last", Email: "User1@test.com"})
+	User2ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User2First", LastName: "User2Last", Email: "User2@test.com"})
+
+	User0FollowingList := map[uint64]uint64{3: 3}
+	User1FollowerList := make(map[uint64]uint64)
+	User2FollowerList := make(map[uint64]uint64)
+
+	//User follow should be unsuccessful because of timeout
+	userApp.FollowUser(ctx, &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
+	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})	
+
+	u0, _ := userApp.GetUser(context.Background(), User0ID)
+	u1, _ := userApp.GetUser(context.Background(), User1ID)
+	u2, _ := userApp.GetUser(context.Background(), User2ID)
+	if reflect.DeepEqual(u0.Following, User0FollowingList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 0: %v", u0.Following))
+	}
+	if reflect.DeepEqual(u1.Following, User1FollowerList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 1: %v", u1.Following))
+	}
+	if reflect.DeepEqual(u2.Following, User2FollowerList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 2: %v", u2.Following))
+	}
+}
+
+
+
+func TestContextTimeoutUnFollowUser(t *testing.T) {
+
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
+
+	// Mock repository with 10 seconds delay for accessing database
+	userRepo := memstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
+
+	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
+	User1ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User1First", LastName: "User1Last", Email: "User1@test.com"})
+	User2ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User2First", LastName: "User2Last", Email: "User2@test.com"})
+
+	User0FollowingList := map[uint64]uint64{3: 3}
+	User1FollowerList := make(map[uint64]uint64)
+	User2FollowerList := make(map[uint64]uint64)
+
+	
+	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
+	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})	
+	//User unfollow should be unsuccessful because of timeout
+	userApp.UnFollowUser(ctx, &userpb.UnFollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
+
+	u0, _ := userApp.GetUser(context.Background(), User0ID)
+	u1, _ := userApp.GetUser(context.Background(), User1ID)
+	u2, _ := userApp.GetUser(context.Background(), User2ID)
+	if reflect.DeepEqual(u0.Following, User0FollowingList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 0: %v", u0.Following))
+	}
+	if reflect.DeepEqual(u1.Following, User1FollowerList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 1: %v", u1.Following))
+	}
+	if reflect.DeepEqual(u2.Following, User2FollowerList) == false {
+		t.Error(fmt.Sprintf("Test Failed Followers map not updated properly for User 2: %v", u2.Following))
 	}
 }
