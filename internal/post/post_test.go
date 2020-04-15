@@ -16,9 +16,11 @@ import (
 )
 
 func TestCreatePost(t *testing.T) {
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -41,9 +43,11 @@ func TestConcurrentCreatePost(t *testing.T) {
 	numPosts := 100
 	wg.Add(numPosts)
 
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -73,9 +77,11 @@ func TestContextCreatePost(t *testing.T) {
 	// from the original context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -94,9 +100,13 @@ func TestContextTimeoutCreatePost(t *testing.T) {
 	// from the original context
 	ctx, cancel := context.WithCancel(context.Background())
 	//cancel()
-	postRepo := postmemstorage.GetTestPostRepository()
-	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
+	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
+	postApp := post.GetPostServiceServer(&testPostRepo)
+
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -113,9 +123,11 @@ func TestContextTimeoutCreatePost(t *testing.T) {
 	}
 }
 func TestGetPost(t *testing.T) {
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -152,9 +164,11 @@ func TestConcurrentGetPost(t *testing.T) {
 	var postList []*postpb.Post
 	postListmu := sync.Mutex{}
 
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -190,9 +204,11 @@ func TestConcurrentGetPost(t *testing.T) {
 func TestContextGetPost(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -211,9 +227,13 @@ func TestContextTimeoutGetPost(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
-	postRepo := postmemstorage.GetTestPostRepository()
-	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetTestUserRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
+	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
+	postApp := post.GetPostServiceServer(&testPostRepo)
+
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -230,9 +250,11 @@ func TestContextTimeoutGetPost(t *testing.T) {
 	}
 }
 func TestGetPosts(t *testing.T) {
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -273,9 +295,11 @@ func TestConcurrentGetPosts(t *testing.T) {
 	var postList []*postpb.Posts
 	postListmu := sync.Mutex{}
 
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -314,9 +338,11 @@ func TestConcurrentGetPosts(t *testing.T) {
 func TestContextGetPosts(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -338,9 +364,13 @@ func TestContextGetPosts(t *testing.T) {
 func TestContextTimeoutGetPosts(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
-	postRepo := postmemstorage.GetTestPostRepository()
-	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetTestUserRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
+	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
+	postApp := post.GetPostServiceServer(&testPostRepo)
+
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -360,9 +390,11 @@ func TestContextTimeoutGetPosts(t *testing.T) {
 	}
 }
 func TestGetPostsByAuthor(t *testing.T) {
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -403,9 +435,11 @@ func TestConcurrentGetPostsByAuthor(t *testing.T) {
 	var postList []*postpb.Posts
 	postListmu := sync.Mutex{}
 
-	postRepo := postmemstorage.GetPostRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -447,7 +481,8 @@ func TestContextGetPostsByAuthor(t *testing.T) {
 	cancel()
 	postRepo := postmemstorage.GetPostRepository()
 	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetUserRepository()
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -469,9 +504,13 @@ func TestContextGetPostsByAuthor(t *testing.T) {
 func TestContextTimeoutGetPostsByAuthor(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
-	postRepo := postmemstorage.GetTestPostRepository()
-	postApp := post.GetPostServiceServer(&postRepo)
-	userRepo := usermemstorage.GetTestUserRepository()
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
+	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
+	postApp := post.GetPostServiceServer(&testPostRepo)
+
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
