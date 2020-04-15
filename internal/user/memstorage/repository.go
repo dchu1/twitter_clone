@@ -46,7 +46,6 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 		userRepo.storage.users[info.UserId] = newUserEntry
 		userRepo.storage.usersRWMu.Unlock()
 		result <- info.UserId
-		errorchan <- nil
 
 	}()
 
@@ -73,11 +72,9 @@ func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb
 		defer userRepo.storage.usersRWMu.RUnlock()
 		userEntry, exists := userRepo.storage.users[userID]
 		if !exists {
-			result <- nil
 			errorchan <- errors.New("user not found")
 		} else {
 			result <- userEntry.user
-			errorchan <- nil
 		}
 	}()
 
@@ -104,7 +101,6 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 			cp = append(cp, userRepo.storage.users[v].user)
 		}
 		result <- cp
-		errorchan <- nil
 	}()
 
 	select {
@@ -129,7 +125,6 @@ func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, er
 			tempArr = append(tempArr, u.user)
 		}
 		result <- tempArr
-		errorchan <- nil
 	}()
 
 	select {
@@ -223,11 +218,12 @@ func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserI
 		}
 	}()
 
-	select{
+	select {
 	case res := <-result:
 		return res
 	case <-ctx.Done():
 		return ctx.Err()
+	}
 }
 
 // GetUserByUsername returns a user object by their username
@@ -237,20 +233,19 @@ func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email str
 
 	go func() {
 		userRepo.storage.usersRWMu.RLock()
-		defer userRepo.storage.usersRWMu.RUnlock()
+
 		exists := false
 
 		for _, v := range userRepo.storage.users {
 			if v.user.AccountInformation.Email == email {
 				result <- v.user
-				errorchan <- nil
 				exists = true
 			}
 		}
 		if !exists {
-			result <- nil
 			errorchan <- errors.New("user not found")
 		}
+		userRepo.storage.usersRWMu.RUnlock()
 	}()
 
 	select {
@@ -272,7 +267,6 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 		// Get the user object from the users map
 		userEntry, err := userRepo.storage.getUserEntry(userId)
 		if err != nil {
-			result <- nil
 			errorchan <- err
 		} else {
 			userEntry.followingRWMu.RLock()
@@ -285,7 +279,6 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 					// if we have an error here, it means our following data structure has an entry inconsistent
 					// with our user structure
 					databaseError = true
-					result <- nil
 					errorchan <- errors.New("database corruption")
 					panic("database corruption")
 				}
@@ -293,7 +286,6 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 			}
 			if !databaseError {
 				result <- tempArray
-				errorchan <- nil
 			}
 		}
 	}()
@@ -319,7 +311,6 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 		// Get the user object from the users map
 		userEntry, err := userRepo.storage.getUserEntry(userId)
 		if err != nil {
-			result <- nil
 			errorchan <- err
 		} else {
 			userEntry.followingRWMu.RLock()
@@ -340,7 +331,6 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 			}
 
 			result <- tempArray
-			errorchan <- nil
 		}
 	}()
 

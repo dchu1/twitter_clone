@@ -28,10 +28,8 @@ func (s *authServer) CheckAuthentication(ctx context.Context, user *pb.UserCrede
 		if db.UsersCred[user.Username] == user.Password {
 
 			result <- &pb.IsAuthenticated{Authenticated: true}
-			errorchan <- nil
 		} else {
 			result <- &pb.IsAuthenticated{Authenticated: false}
-			errorchan <- nil
 		}
 
 	}()
@@ -53,7 +51,6 @@ func (s *authServer) AddCredential(ctx context.Context, user *pb.UserCredential)
 	go func() {
 		db.UsersCred[user.Username] = user.Password
 		result <- nil
-		errorchan <- nil
 	}()
 
 	select {
@@ -76,7 +73,6 @@ func (s *authServer) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb.Aut
 		sessionId := generateSessionId()
 		db.SessionManager[sessionId] = user.UserId
 		result <- &pb.AuthToken{Token: sessionId}
-		errorchan <- nil
 	}()
 
 	select {
@@ -96,7 +92,6 @@ func (s *authServer) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken) (*
 	go func() {
 		delete(db.SessionManager, sess.Token)
 		result <- nil
-		errorchan <- nil
 	}()
 
 	select {
@@ -114,9 +109,7 @@ func (s *authServer) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.Use
 	errorchan := make(chan error)
 
 	go func() {
-
 		result <- &pb.UserId{UserId: db.SessionManager[sess.Token]}
-		errorchan <- nil
 	}()
 
 	select {
@@ -140,17 +133,3 @@ func generateSessionId() string {
 func GetAuthServer() *authServer {
 	return &authServer{}
 }
-
-// func main() {
-
-// 	lis, err := net.Listen("tcp", port)
-// 	if err != nil {
-// 		log.Fatalf("failed to listen: %v", err)
-// 	}
-// 	s := grpc.NewServer()
-// 	fmt.Println("Server running on port", port)
-// 	pb.RegisterAuthenticationServer(s, &authServer{})
-// 	if err := s.Serve(lis); err != nil {
-// 		log.Fatalf("failed to serve: %v", err)
-// 	}
-// }

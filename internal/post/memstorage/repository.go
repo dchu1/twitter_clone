@@ -36,7 +36,6 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 		postEntry.post.Timestamp, _ = ptypes.TimestampProto(time.Now())
 		postRepo.storage.posts[p.PostID] = postEntry
 		result <- p.PostID
-		errorchan <- nil
 
 	}()
 
@@ -62,12 +61,10 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 		defer postRepo.storage.postsRWMu.RUnlock()
 		postEntry, exists := postRepo.storage.posts[postID]
 		if !exists {
-			result <- nil
 			errorchan <- errors.New("user not found")
 		} else {
 			p := *postEntry.post
 			result <- &p
-			errorchan <- nil
 		}
 
 	}()
@@ -97,7 +94,6 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 			postArr = append(postArr, postEntry.post)
 		}
 		result <- postArr
-		errorchan <- nil
 
 	}()
 
@@ -131,7 +127,6 @@ func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []
 			v.mu.RUnlock()
 		}
 		result <- postArr
-		errorchan <- nil
 	}()
 
 	select {
