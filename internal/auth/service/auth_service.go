@@ -1,8 +1,9 @@
-package server
+package service
 
 import (
 	"context"
 
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/storage"
 )
@@ -12,7 +13,7 @@ const (
 )
 
 type authServer struct {
-	authRepository storage.AuthRepository
+	authRepository auth.AuthRepository
 	pb.UnimplementedAuthenticationServer
 }
 
@@ -37,5 +38,11 @@ func (s *authServer) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.Use
 }
 
 func GetAuthServer() *authServer {
-	return &authServer{}
+	return &authServer{authRepository: storage.GetAuthRepository()}
+}
+
+func GetTestAuthServer() *authServer {
+	a := storage.GetAuthRepository()
+	b := storage.GetTestAuthRepository(a)
+	return &authServer{authRepository: b}
 }
