@@ -32,8 +32,8 @@
             <div class="card cardNews">
               <div *ngFor="let data of newsData">
                 <span>
-                  <p><b style="font-weight: 500;">{{data.author.firstname}} {{data.author.lastname}}</b>
-                    : {{data.message}} </p>
+                  <p><b style="font-weight: 500;">{{data.author.firstname}} {{data.author.lastname}} <span style = "float:right;">{{data.timestamp}}</span></b></p>
+                   <p>  {{data.message}} </p>
                 </span>
                 <hr>
               </div>

@@ -25,8 +25,14 @@ export class DashboardComponent implements OnInit {
     this.apiService.getData("feed").subscribe((response: any) => {
       console.log("[Response]:: ", response);
       this.newsData = []
-      if (response["posts"])
-        this.newsData = response.posts
+      if (response["posts"]){
+          response.posts.forEach(element => {
+                 console.log(new Date(element.timestamp).toLocaleTimeString())
+              element.timestamp = new Date(element.timestamp).toLocaleTimeString()
+          }
+          this.newsData = response.posts
+      }
+        
     },
       error => {
         console.log("[Error]:: ", error);
