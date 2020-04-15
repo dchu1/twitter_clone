@@ -7,13 +7,18 @@ import (
 	"errors"
 	"io"
 
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
 )
 
-type AuthRepository struct {
+type authRepository struct {
 }
 
-func (s *AuthRepository) CheckAuthentication(ctx context.Context, user *pb.UserCredential) (*pb.IsAuthenticated, error) {
+func GetAuthRepository() auth.AuthRepository {
+	return new(authRepository)
+}
+
+func (s *authRepository) CheckAuthentication(ctx context.Context, user *pb.UserCredential) (*pb.IsAuthenticated, error) {
 	result := make(chan *pb.IsAuthenticated, 1)
 	errorchan := make(chan error, 1)
 
@@ -38,7 +43,7 @@ func (s *AuthRepository) CheckAuthentication(ctx context.Context, user *pb.UserC
 	}
 }
 
-func (s *AuthRepository) AddCredential(ctx context.Context, user *pb.UserCredential) (*pb.Void, error) {
+func (s *authRepository) AddCredential(ctx context.Context, user *pb.UserCredential) (*pb.Void, error) {
 	result := make(chan *pb.Void, 1)
 	errorchan := make(chan error, 1)
 
@@ -58,6 +63,8 @@ func (s *AuthRepository) AddCredential(ctx context.Context, user *pb.UserCredent
 		go func() {
 			select {
 			case <-result:
+				UsersCredRWmu.Lock()
+				defer UsersCredRWmu.Unlock()
 				delete(UsersCred, user.Username)
 				return
 			case <-errorchan:
@@ -68,7 +75,7 @@ func (s *AuthRepository) AddCredential(ctx context.Context, user *pb.UserCredent
 	}
 }
 
-func (s *AuthRepository) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb.AuthToken, error) {
+func (s *authRepository) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb.AuthToken, error) {
 	result := make(chan *pb.AuthToken, 1)
 	errorchan := make(chan error, 1)
 
@@ -90,28 +97,42 @@ func (s *AuthRepository) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb
 	}
 }
 
-func (s *AuthRepository) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken) (*pb.Void, error) {
-	result := make(chan *pb.Void, 1)
+func (s *authRepository) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken) (*pb.Void, error) {
 	errorchan := make(chan error, 1)
+	bufferchan := make(chan uint64, 1)
 
 	go func() {
 		SessionManagerRWmu.Lock()
 		defer SessionManagerRWmu.Unlock()
+		token, exists := SessionManager[sess.Token]
+		if !exists {
+			errorchan <- errors.New("token does not exist")
+			return
+		}
 		delete(SessionManager, sess.Token)
-		result <- nil
+		bufferchan <- token
 	}()
 
 	select {
-	case token := <-result:
-		return token, nil
 	case err := <-errorchan:
 		return nil, err
 	case <-ctx.Done():
+		go func() {
+			select {
+			case token := <-bufferchan:
+				SessionManagerRWmu.Lock()
+				defer SessionManagerRWmu.Unlock()
+				SessionManager[sess.Token] = token
+				return
+			case <-errorchan:
+				return
+			}
+		}()
 		return nil, ctx.Err()
 	}
 }
 
-func (s *AuthRepository) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.UserId, error) {
+func (s *authRepository) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.UserId, error) {
 	result := make(chan *pb.UserId, 1)
 	errorchan := make(chan error, 1)
 

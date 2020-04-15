@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/server"
+	server "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/service"
 )
 
 func TestConcurrentCredential(t *testing.T) {
@@ -100,6 +101,78 @@ func TestConcurrentAuthToken(t *testing.T) {
 	}
 }
 
-func GetUserId(t *testing.T) {
-	//authServer := server.GetAuthServer()
+func TestContextTimeoutCredential(t *testing.T) {
+	var err error
+	authServer := server.GetTestAuthServer()
+	errchan := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	cred := &pb.UserCredential{Username: "test", Password: "test"}
+	go func() {
+		_, err := authServer.AddCredential(ctx, cred)
+		errchan <- err
+	}()
+	time.Sleep(1 * time.Second)
+	cancel()
+	err = <-errchan
+	if err == nil {
+		t.Error("No error returned")
+	}
+	result, err := authServer.CheckAuthentication(context.Background(), cred)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if result.Authenticated {
+		t.Error("User authenticated")
+	}
+}
+
+func TestContextTimeoutAuthToken(t *testing.T) {
+	var err error
+	authServer := server.GetTestAuthServer()
+	resultchan := make(chan *pb.AuthToken)
+	errchan := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		temp, err := authServer.GetAuthToken(ctx, &pb.UserId{UserId: uint64(1)})
+		if err != nil {
+			errchan <- err
+		}
+		resultchan <- temp
+
+	}()
+	time.Sleep(1 * time.Second)
+	cancel()
+	select {
+	case <-resultchan:
+	case err = <-errchan:
+	}
+	if err == nil {
+		t.Error("No error returned")
+	}
+
+}
+
+func TestContextTimeoutRemoveAuthToken(t *testing.T) {
+	var err error
+	authServer := server.GetTestAuthServer()
+	token, err := authServer.GetAuthToken(context.Background(), &pb.UserId{UserId: uint64(1)})
+
+	errchan := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		_, err := authServer.RemoveAuthToken(ctx, token)
+		errchan <- err
+	}()
+	time.Sleep(1 * time.Second)
+	cancel()
+	err = <-errchan
+	if err == nil {
+		t.Error("No error returned")
+	}
+
+	_, err = authServer.GetUserId(context.Background(), token)
+	if err != nil {
+		t.Error("Token removed")
+	}
+
 }
