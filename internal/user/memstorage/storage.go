@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// UserStorage is package level userStorage, which can be used instead of instantiating one
 var UserStorage *userStorage
 
 type userStorage struct {
@@ -14,6 +15,7 @@ type userStorage struct {
 	userID    uint64
 }
 
+// NewUserStorage returns a new instance of a userStorage
 func NewUserStorage() *userStorage {
 	return &userStorage{sync.RWMutex{}, sync.Mutex{}, make(map[uint64]*userEntry), 1}
 }

@@ -154,6 +154,42 @@ func (postRepo *postRepository) UpdatePost(ctx context.Context, p pb.Post) error
 	return errors.New("Feature not implemented")
 }
 
-func (postRepo *postRepository) DeletePost(ctx context.Context, postIDs uint64) error {
-	return errors.New("Feature not implemented")
+func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) error {
+	result := make(chan error, 1)
+	buffer := make(chan *postEntry, 1)
+	go func() {
+		postRepo.storage.postsRWMu.Lock()
+		defer postRepo.storage.postsRWMu.Unlock()
+		postEntry, exists := postRepo.storage.posts[postID]
+		if !exists {
+			result <- nil
+			return
+		}
+		delete(postRepo.storage.posts, postID)
+		buffer <- postEntry
+		result <- nil
+	}()
+
+	select {
+	case ret := <-result:
+		return ret
+	case <-ctx.Done():
+		// if ctx done, need to continue to listen to know whether to add postEntry back into db
+		go func() {
+			select {
+			case postEntry := <-buffer:
+				postRepo.storage.postsRWMu.Lock()
+				defer postRepo.storage.postsRWMu.Unlock()
+				postRepo.storage.posts[postID] = postEntry
+				return
+			case <-result:
+				// if result != nil, an error occurred and so don't need to add back into db
+				if result != nil {
+					return
+				}
+			}
+
+		}()
+		return ctx.Err()
+	}
 }

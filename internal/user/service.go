@@ -58,6 +58,7 @@ func (s *userServiceServer) GetUserIdByUsername(ctx context.Context, req *pb.Use
 	return &pb.UserId{UserId: user.AccountInformation.UserId}, err
 }
 
+// GetUserServiceServer returns a grpc Server for the user service using the provided UserRepository
 func GetUserServiceServer(ur *UserRepository) *userServiceServer {
 	return &userServiceServer{userRepo: *ur}
 }

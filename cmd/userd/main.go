@@ -14,8 +14,11 @@ import (
 )
 
 func main() {
+	// Read Config
 	runtimeViper := viper.New()
 	config.NewRuntimeConfig(runtimeViper, ".")
+
+	// Start Server
 	userRepo := memstorage.GetUserRepository()
 	lis, err := net.Listen("tcp", "localhost:"+runtimeViper.GetStringSlice("userservice.ports")[0])
 	if err != nil {

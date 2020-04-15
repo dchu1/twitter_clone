@@ -10,7 +10,7 @@ import (
 var defaultConfig = []byte(`# filename: config.toml
 [webserver]
 ports = ["9090"]
-contexttimeout = "60s" # timeout for contexts
+contexttimeout = "10s" # timeout for contexts
 
 [userservice]
 ports = ["50053"]
@@ -22,6 +22,7 @@ ports = ["50052"]
 ports = ["50051"]
 `)
 
+// NewConfig reads a config into the package level viper instance
 func NewConfig(filepath string) {
 	viper.SetConfigName("config") // name of config file (without extension)
 	viper.SetConfigType("toml")
@@ -38,6 +39,7 @@ func NewConfig(filepath string) {
 	}
 }
 
+// NewRuntimeConfig reads a config into the given viper instance
 func NewRuntimeConfig(vip *viper.Viper, filepath string) {
 	vip.SetConfigName("config") // name of config file (without extension)
 	vip.SetConfigType("toml")

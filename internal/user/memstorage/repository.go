@@ -20,10 +20,12 @@ type userEntry struct {
 	user          *pb.User
 }
 
+// GetUserRepository returns a UserRepository that uses package level storage
 func GetUserRepository() user.UserRepository {
 	return &userRepository{UserStorage}
 }
 
+// NewUserRepository reutnrs a UserRepository that uses the given storage
 func NewUserRepository(storage *userStorage) user.UserRepository {
 	return &userRepository{storage}
 }
@@ -61,9 +63,7 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 		go func() {
 			select {
 			case userID := <-result:
-				userRepo.storage.usersRWMu.Lock()
-				delete(userRepo.storage.users, userID)
-				userRepo.storage.usersRWMu.Unlock()
+				userRepo.DeleteUser(context.Background(), userID)
 				return
 			case <-errorchan:
 				return
@@ -73,7 +73,7 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 	}
 }
 
-// GetUser creates a deep copy of the specified users.
+// GetUser creates a copy of the specified user.
 func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb.User, error) {
 	result := make(chan *pb.User, 1)
 	errorchan := make(chan error, 1)
@@ -100,7 +100,7 @@ func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb
 	}
 }
 
-// GetUsers creates a deep copy of the specified users.
+// GetUsers creates a copy of the specified users.
 func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) ([]*pb.User, error) {
 	result := make(chan []*pb.User, 1)
 	errorchan := make(chan error, 1)
@@ -125,6 +125,7 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 	}
 }
 
+// GetAllUsers returns all users
 func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, error) {
 	result := make(chan []*pb.User, 1)
 	errorchan := make(chan error, 1)
@@ -371,33 +372,46 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 
 }
 
+// DeleteUser removes a user
 func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) error {
-	// result := make(chan error, 1)
-	// buffer := make(chan *UserEntry, 1)
+	result := make(chan error, 1)
+	buffer := make(chan *userEntry, 1)
 
-	// go func() {
-	// 	userRepo.storage.usersRWMu.Lock()
-	// 	defer userRepo.storage.usersRWMu.Unlock()
-	// 	userEntry, exists := userRepo.storage.users[userID]
-	// 	if !exists {
-	// 		result <- errors.New("user not found")
-	// 		return
-	// 	}
-	// 	delete(userRepo.storage.users, userID)
-	// 	buffer <- userEntry
-	// 	result <- nil
-	// }
+	go func() {
+		userRepo.storage.usersRWMu.Lock()
+		defer userRepo.storage.usersRWMu.Unlock()
+		userEntry, exists := userRepo.storage.users[userID]
+		if !exists {
+			result <- errors.New("user not found")
+			return
+		}
+		delete(userRepo.storage.users, userID)
+		buffer <- userEntry
+		result <- nil
+	}()
 
-	// select {
-	// case ret := <-result:
-	// 	return ret
-	// case <-ctx.Done():
-	// 	go func() {
+	select {
+	case ret := <-result:
+		return ret
+	case <-ctx.Done():
+		// if ctx done, need to continue to listen to know whether to add userEntry back into db
+		go func() {
+			select {
+			case userEntry := <-buffer:
+				userRepo.storage.usersRWMu.Lock()
+				defer userRepo.storage.usersRWMu.Unlock()
+				userRepo.storage.users[userID] = userEntry
+				return
+			case <-result:
+				// if result != nil, an error occurred and so don't need to add back into db
+				if result != nil {
+					return
+				}
+			}
 
-	// 	}
-	// 	return nil, ctx.Err()
-	// }
-	return errors.New("Feature not implemented")
+		}()
+		return ctx.Err()
+	}
 }
 func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
 	return errors.New("Feature not implemented")

@@ -14,9 +14,12 @@ import (
 )
 
 func main() {
+	// Read Config
 	runtimeViper := viper.New()
 	config.NewRuntimeConfig(runtimeViper, ".")
 	postRepo := memstorage.GetPostRepository()
+
+	// Start server
 	lis, err := net.Listen("tcp", "localhost:"+runtimeViper.GetStringSlice("postservice.ports")[0])
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

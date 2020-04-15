@@ -30,20 +30,62 @@ Please note that you have to be in the cmd/webd directory to run the webd.go fil
 # Project Structure
 
 ```
-github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project
-├───cmd             # Application code
-│   ├───frontend        # Frontend Application code
-│   └───webd            # Backend Application code
-│       │   webd.go         # Main file that runs the backend server
-│       │   config.toml     # Configuration file
-│       ├───app             # Package for manipulating our data structures.
-│       ├───auth            # Package for managing sessions
-│       │   ├───session
-│       │   └───storage
-│       ├───config          # Package for handling configuration files
-│       ├───handlers        # Package with http handlers
-│       │   ├───middleware      # Package with middleware code
-│       │   └───models          # Package with request and response struct definitions       
-├───internal        # Packages that are shared across applications
-└───vendor          # Vendored 3rd Party dependencies
+yjs310-shs572-dfc296-final-project
+│   config.toml
+│   
+├───cmd             # Holds files for running the services
+│   ├───authd
+│   │       main.go # Main file for auth service server
+│   │       
+│   ├───postd
+│   │       main.go # Main file for post service server
+│   │       
+│   ├───userd
+│   │       main.go # Main file for user service server
+│   │       
+│   └───webd
+│       │   main.go # Main file for web server
+│       │   
+│       └───handlers # web server handlers
+│                   
+└───internal # Application logic
+    ├───auth
+    │   ├───authentication      # authentication protobuf files
+    │   │       auth.pb.go
+    │   │       auth.proto
+    │   │       
+    │   ├───server              # authentication service
+    │   │       auth_server.go
+    │   │       
+    │   └───storage             # storage for authentication service
+    │           memory.go
+    │           
+    ├───config                  # config loading
+    │       config.go
+    │       
+    ├───post                    
+    │   │   models.go
+    │   │   service.go          post service 
+    │   │   service_test.go
+    │   │   
+    │   ├───memstorage
+    │   │       repository.go
+    │   │       storage.go
+    │   │       
+    │   └───postpb
+    │           post.pb.go
+    │           post.proto
+    │           
+    └───user
+        │   models.go
+        │   service.go
+        │   service_test.go
+        │   
+        ├───memstorage
+        │       repository.go
+        │       storage.go
+        │       
+        └───userpb
+                user.pb.go
+                user.proto
 ```

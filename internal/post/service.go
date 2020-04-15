@@ -42,6 +42,8 @@ func (s *postServiceServer) GetPostsByAuthors(ctx context.Context, userIDs *pb.U
 	sort.Sort(ByTime(posts))
 	return &pb.Posts{Posts: posts}, err
 }
+
+// GetPostServiceServer returns a grpc Server for the post service using the provided PostRepository
 func GetPostServiceServer(pr *PostRepository) *postServiceServer {
 	return &postServiceServer{postRepo: *pr}
 }
