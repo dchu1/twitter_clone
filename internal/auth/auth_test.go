@@ -151,3 +151,28 @@ func TestContextTimeoutAuthToken(t *testing.T) {
 	}
 
 }
+
+func TestContextTimeoutRemoveAuthToken(t *testing.T) {
+	var err error
+	authServer := server.GetTestAuthServer()
+	token, err := authServer.GetAuthToken(context.Background(), &pb.UserId{UserId: uint64(1)})
+
+	errchan := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		_, err := authServer.RemoveAuthToken(ctx, token)
+		errchan <- err
+	}()
+	time.Sleep(1 * time.Second)
+	cancel()
+	err = <-errchan
+	if err == nil {
+		t.Error("No error returned")
+	}
+
+	_, err = authServer.GetUserId(context.Background(), token)
+	if err != nil {
+		t.Error("Token removed")
+	}
+
+}
