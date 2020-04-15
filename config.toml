@@ -1,0 +1,13 @@
+# filename: config.toml
+[webserver]
+ports = ["9090"]
+contexttimeout = "5s" # timeout for contexts
+
+[userservice]
+ports = ["50053"]
+
+[postservice]
+ports = ["50052"]
+
+[authservice]
+ports = ["50051"]
