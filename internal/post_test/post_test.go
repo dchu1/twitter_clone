@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
 	postmemstorage "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/memstorage"
@@ -88,7 +89,29 @@ func TestContextCreatePost(t *testing.T) {
 		t.Error("post created even after cancelling context")
 	}
 }
+func TestContextTimeoutCreatePost(t *testing.T) {
+	// Create a new context, with its cancellation function
+	// from the original context
+	ctx, cancel := context.WithCancel(context.Background())
+	//cancel()
+	postRepo := postmemstorage.GetTestPostRepository()
+	postApp := post.GetPostServiceServer(&postRepo)
+	userRepo := usermemstorage.GetUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
 
+	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+	user, _ := userApp.CreateUser(context.Background(), &userInfo)
+	postInfo := postpb.Post{Message: "testMessage", UserId: user.UserId}
+	go postApp.CreatePost(ctx, &postInfo)
+	time.Sleep(time.Second * 1)
+	cancel()
+	time.Sleep(time.Second * 10)
+	ctx = context.Background()
+	_, err := postApp.GetPost(ctx, &postpb.PostID{PostID: uint64(1)})
+	if err == nil {
+		t.Error("post still exists")
+	}
+}
 func TestGetPost(t *testing.T) {
 	postRepo := postmemstorage.GetPostRepository()
 	postApp := post.GetPostServiceServer(&postRepo)
@@ -184,7 +207,28 @@ func TestContextGetPost(t *testing.T) {
 		t.Error("Context error not thrown")
 	}
 }
+func TestContextTimeoutGetPost(t *testing.T) {
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
 
+	postRepo := postmemstorage.GetTestPostRepository()
+	postApp := post.GetPostServiceServer(&postRepo)
+	userRepo := usermemstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
+
+	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+	user, _ := userApp.CreateUser(context.Background(), &userInfo)
+	postInfo1 := postpb.Post{Message: "testMessage1", UserId: user.UserId}
+	postID1, _ := postApp.CreatePost(context.Background(), &postInfo1)
+	post1, err1 := postApp.GetPost(ctx, postID1)
+
+	if post1 != nil {
+		t.Error("post created even after cancelling context")
+	}
+	if err1 == nil {
+		t.Error("Context error not thrown")
+	}
+}
 func TestGetPosts(t *testing.T) {
 	postRepo := postmemstorage.GetPostRepository()
 	postApp := post.GetPostServiceServer(&postRepo)
@@ -291,7 +335,30 @@ func TestContextGetPosts(t *testing.T) {
 		t.Error("Context cancelled still error not thrown")
 	}
 }
+func TestContextTimeoutGetPosts(t *testing.T) {
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
+	postRepo := postmemstorage.GetTestPostRepository()
+	postApp := post.GetPostServiceServer(&postRepo)
+	userRepo := usermemstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
 
+	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+	user, _ := userApp.CreateUser(context.Background(), &userInfo)
+	postInfo1 := postpb.Post{Message: "testMessage1", UserId: user.UserId}
+	postInfo2 := postpb.Post{Message: "testMessage2", UserId: user.UserId}
+	post1, _ := postApp.CreatePost(context.Background(), &postInfo1)
+	post2, _ := postApp.CreatePost(context.Background(), &postInfo2)
+	postArray := []uint64{post1.PostID, post2.PostID}
+	postIDs := postpb.PostIDs{PostIDs: postArray}
+	post, err := postApp.GetPosts(ctx, &postIDs)
+	if post.Posts != nil {
+		t.Error("Posts returned even after cancelling the context")
+	}
+	if err == nil {
+		t.Error("Context cancelled still error not thrown")
+	}
+}
 func TestGetPostsByAuthor(t *testing.T) {
 	postRepo := postmemstorage.GetPostRepository()
 	postApp := post.GetPostServiceServer(&postRepo)
@@ -391,6 +458,31 @@ func TestContextGetPostsByAuthor(t *testing.T) {
 	postApp.CreatePost(context.Background(), &postInfo2)
 	userArray := []uint64{user.UserId}
 	userIDs := postpb.UserIDs{UserIDs: userArray}
+	post, err := postApp.GetPostsByAuthors(ctx, &userIDs)
+	if post.Posts != nil {
+		t.Error("post returned even after cancelling the context")
+	}
+	if err == nil {
+		t.Error("Context cancelled but the error is not thrown")
+	}
+}
+func TestContextTimeoutGetPostsByAuthor(t *testing.T) {
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
+	postRepo := postmemstorage.GetTestPostRepository()
+	postApp := post.GetPostServiceServer(&postRepo)
+	userRepo := usermemstorage.GetTestUserRepository()
+	userApp := user.GetUserServiceServer(&userRepo)
+
+	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+	user, _ := userApp.CreateUser(context.Background(), &userInfo)
+	postInfo1 := postpb.Post{Message: "testMessage1", UserId: user.UserId}
+	postInfo2 := postpb.Post{Message: "testMessage2", UserId: user.UserId}
+	go postApp.CreatePost(context.Background(), &postInfo1)
+	go postApp.CreatePost(context.Background(), &postInfo2)
+	userArray := []uint64{user.UserId}
+	userIDs := postpb.UserIDs{UserIDs: userArray}
+	time.Sleep(1 * time.Second)
 	post, err := postApp.GetPostsByAuthors(ctx, &userIDs)
 	if post.Posts != nil {
 		t.Error("post returned even after cancelling the context")

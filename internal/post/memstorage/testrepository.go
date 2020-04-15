@@ -14,7 +14,7 @@ type testPostRepository struct {
 	sleeptime time.Duration
 }
 
-const sleeptime = "10s"
+const sleeptime = "5s"
 
 // GetUserRepository returns a UserRepository that uses package level storage
 func GetTestPostRepository() post.PostRepository {
