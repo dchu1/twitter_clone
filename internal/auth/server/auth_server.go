@@ -20,8 +20,8 @@ type authServer struct {
 }
 
 func (s *authServer) CheckAuthentication(ctx context.Context, user *pb.UserCredential) (*pb.IsAuthenticated, error) {
-	result := make(chan *pb.IsAuthenticated)
-	errorchan := make(chan error)
+	result := make(chan *pb.IsAuthenticated, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 
@@ -45,8 +45,8 @@ func (s *authServer) CheckAuthentication(ctx context.Context, user *pb.UserCrede
 }
 
 func (s *authServer) AddCredential(ctx context.Context, user *pb.UserCredential) (*pb.Void, error) {
-	result := make(chan *pb.Void)
-	errorchan := make(chan error)
+	result := make(chan *pb.Void, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		db.UsersCred[user.Username] = user.Password
@@ -59,14 +59,22 @@ func (s *authServer) AddCredential(ctx context.Context, user *pb.UserCredential)
 	case err := <-errorchan:
 		return nil, err
 	case <-ctx.Done():
-		delete(db.UsersCred, user.Username)
+		go func() {
+			select {
+			case <-result:
+				delete(db.UsersCred, user.Username)
+				return
+			case <-errorchan:
+				return
+			}
+		}()
 		return nil, ctx.Err()
 	}
 }
 
 func (s *authServer) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb.AuthToken, error) {
-	result := make(chan *pb.AuthToken)
-	errorchan := make(chan error)
+	result := make(chan *pb.AuthToken, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 
@@ -86,8 +94,8 @@ func (s *authServer) GetAuthToken(ctx context.Context, user *pb.UserId) (*pb.Aut
 }
 
 func (s *authServer) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken) (*pb.Void, error) {
-	result := make(chan *pb.Void)
-	errorchan := make(chan error)
+	result := make(chan *pb.Void, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		delete(db.SessionManager, sess.Token)
@@ -105,8 +113,8 @@ func (s *authServer) RemoveAuthToken(ctx context.Context, sess *pb.AuthToken) (*
 }
 
 func (s *authServer) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.UserId, error) {
-	result := make(chan *pb.UserId)
-	errorchan := make(chan error)
+	result := make(chan *pb.UserId, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		result <- &pb.UserId{UserId: db.SessionManager[sess.Token]}

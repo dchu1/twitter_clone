@@ -24,8 +24,8 @@ func NewPostRepository(storage *postStorage) post.PostRepository {
 
 // CreatePost inserts a post into our post map
 func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uint64, error) {
-	result := make(chan uint64)
-	errorchan := make(chan error)
+	result := make(chan uint64, 1)
+	errorchan := make(chan error, 1)
 	go func() {
 
 		postRepo.storage.postsRWMu.Lock()
@@ -46,15 +46,26 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 		//Sending 0 as an invalid postID
 		return 0, err
 	case <-ctx.Done():
-		delete(postRepo.storage.posts, p.PostID)
+		go func() {
+			select {
+			case <-result:
+				postRepo.storage.postsRWMu.Lock()
+				delete(postRepo.storage.posts, p.PostID)
+				postRepo.storage.postsRWMu.Unlock()
+				return
+			case <-errorchan:
+				return
+			}
+		}()
+
 		return 0, ctx.Err()
 	}
 }
 
 // GetPosts retrieves an array of post from the post map
 func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb.Post, error) {
-	result := make(chan *pb.Post)
-	errorchan := make(chan error)
+	result := make(chan *pb.Post, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		postRepo.storage.postsRWMu.RLock()
@@ -81,8 +92,8 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 
 // GetPosts retrieves an array of post from the post map
 func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) ([]*pb.Post, error) {
-	result := make(chan []*pb.Post)
-	errorchan := make(chan error)
+	result := make(chan []*pb.Post, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 
@@ -109,8 +120,8 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 
 // GetPosts retrieves an array of post from the post map
 func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []uint64) ([]*pb.Post, error) {
-	result := make(chan []*pb.Post)
-	errorchan := make(chan error)
+	result := make(chan []*pb.Post, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		postRepo.storage.postsRWMu.RLock()

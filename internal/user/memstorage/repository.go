@@ -30,8 +30,8 @@ func NewUserRepository(storage *userStorage) user.UserRepository {
 
 // CreateUser adds a user to the appropriate data structures
 func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.AccountInformation) (uint64, error) {
-	result := make(chan uint64)
-	errorchan := make(chan error)
+	result := make(chan uint64, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 
@@ -56,15 +56,27 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 		//Sending 0 as an invalid postID
 		return 0, err
 	case <-ctx.Done():
-		delete(userRepo.storage.users, info.UserId)
+		// if ctx.Done(), we need to make sure that if the user has or will be created, it is deleted,
+		// so start a new go routine to monitor the result and error channels
+		go func() {
+			select {
+			case userID := <-result:
+				userRepo.storage.usersRWMu.Lock()
+				delete(userRepo.storage.users, userID)
+				userRepo.storage.usersRWMu.Unlock()
+				return
+			case <-errorchan:
+				return
+			}
+		}()
 		return 0, ctx.Err()
 	}
 }
 
 // GetUser creates a deep copy of the specified users.
 func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb.User, error) {
-	result := make(chan *pb.User)
-	errorchan := make(chan error)
+	result := make(chan *pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 
@@ -90,8 +102,8 @@ func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb
 
 // GetUsers creates a deep copy of the specified users.
 func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) ([]*pb.User, error) {
-	result := make(chan []*pb.User)
-	errorchan := make(chan error)
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		userRepo.storage.usersRWMu.RLock()
@@ -114,8 +126,8 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 }
 
 func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, error) {
-	result := make(chan []*pb.User)
-	errorchan := make(chan error)
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		userRepo.storage.usersRWMu.RLock()
@@ -141,7 +153,7 @@ func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, er
 // to reflect that a user is following another user
 func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID uint64, UserIDToFollow uint64) error {
 
-	result := make(chan error)
+	result := make(chan error, 1)
 	go func() {
 		if followingUserID == UserIDToFollow {
 			result <- errors.New("duplicate user ids")
@@ -175,6 +187,13 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 	case res := <-result:
 		return res
 	case <-ctx.Done():
+		// listen to the result channel in case the operation was successful, then unfollow
+		go func() {
+			res := <-result
+			if res == nil {
+				userRepo.UnFollowUser(context.Background(), followingUserID, UserIDToFollow)
+			}
+		}()
 		return ctx.Err()
 	}
 }
@@ -183,7 +202,7 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID 
 // to reflect that a user has unfollowed another user
 func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserID uint64, UserIDToUnfollow uint64) error {
 
-	result := make(chan error)
+	result := make(chan error, 1)
 
 	go func() {
 		if followingUserID == UserIDToUnfollow {
@@ -222,14 +241,21 @@ func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserI
 	case res := <-result:
 		return res
 	case <-ctx.Done():
+		// listen to the result channel in case the operation was successful, then follow
+		go func() {
+			res := <-result
+			if res == nil {
+				userRepo.FollowUser(context.Background(), followingUserID, UserIDToUnfollow)
+			}
+		}()
 		return ctx.Err()
 	}
 }
 
 // GetUserByUsername returns a user object by their username
 func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email string) (*pb.User, error) {
-	result := make(chan *pb.User)
-	errorchan := make(chan error)
+	result := make(chan *pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		userRepo.storage.usersRWMu.RLock()
@@ -260,8 +286,8 @@ func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email str
 
 // GetFollowing returns an array of users that the given user is following
 func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
-	result := make(chan []*pb.User)
-	errorchan := make(chan error)
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		// Get the user object from the users map
@@ -304,8 +330,8 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 // GetNotFollowing returns an array of users that the given user is not following
 func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
 
-	result := make(chan []*pb.User)
-	errorchan := make(chan error)
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
 	go func() {
 		// Get the user object from the users map
@@ -346,6 +372,31 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 }
 
 func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) error {
+	// result := make(chan error, 1)
+	// buffer := make(chan *UserEntry, 1)
+
+	// go func() {
+	// 	userRepo.storage.usersRWMu.Lock()
+	// 	defer userRepo.storage.usersRWMu.Unlock()
+	// 	userEntry, exists := userRepo.storage.users[userID]
+	// 	if !exists {
+	// 		result <- errors.New("user not found")
+	// 		return
+	// 	}
+	// 	delete(userRepo.storage.users, userID)
+	// 	buffer <- userEntry
+	// 	result <- nil
+	// }
+
+	// select {
+	// case ret := <-result:
+	// 	return ret
+	// case <-ctx.Done():
+	// 	go func() {
+
+	// 	}
+	// 	return nil, ctx.Err()
+	// }
 	return errors.New("Feature not implemented")
 }
 func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
