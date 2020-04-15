@@ -14,7 +14,8 @@ import (
 )
 
 func TestAddUser(t *testing.T) {
-	userRepo := memstorage.GetUserRepository()
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -30,7 +31,8 @@ func TestAddUser(t *testing.T) {
 }
 
 func TestFollowUser(t *testing.T) {
-	userRepo := memstorage.GetUserRepository()
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	followingUserID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "FollowerFirst", LastName: "FollowerLast", Email: "follower@test.com"})
@@ -50,7 +52,8 @@ func TestFollowUser(t *testing.T) {
 }
 
 func TestUnFollowUser(t *testing.T) {
-	userRepo := memstorage.GetUserRepository()
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)	
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
@@ -83,8 +86,11 @@ func TestUnFollowUser(t *testing.T) {
 func TestContextAddUser(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	userRepo := memstorage.GetUserRepository()
-	userApp := user.GetUserServiceServer(&userRepo)
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
+	testUserRepo := memstorage.NewTestUserRepository(userRepo)
+	userApp := user.GetUserServiceServer(&testUserRepo)
+	
 	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	cancel()
 	userApp.CreateUser(ctx, &expected_user)
@@ -99,7 +105,8 @@ func TestConcurrentAddUser(t *testing.T) {
 	var wg sync.WaitGroup
 	numUsers := 100
 	wg.Add(numUsers)
-	userRepo := memstorage.GetUserRepository()
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	for user := 0; user < numUsers; user++ {
@@ -122,7 +129,8 @@ func TestConcurrentFollow(t *testing.T) {
 	var wg sync.WaitGroup
 	numUsers := 100
 	wg.Add(numUsers)
-	userRepo := memstorage.GetUserRepository()
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	//Create Users
@@ -167,8 +175,10 @@ func TestContextTimeoutAddUser(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	
 	// Mock repository with 10 seconds delay for accessing database
-	userRepo := memstorage.GetTestUserRepository()
-	userApp := user.GetUserServiceServer(&userRepo)
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
+	testUserRepo := memstorage.NewTestUserRepository(userRepo)
+	userApp := user.GetUserServiceServer(&testUserRepo)
 	
 	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	userApp.CreateUser(ctx, &expected_user)
@@ -187,8 +197,10 @@ func TestContextTimeoutFollowUser(t *testing.T) {
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
 	// Mock repository with 10 seconds delay for accessing database
-	userRepo := memstorage.GetTestUserRepository()
-	userApp := user.GetUserServiceServer(&userRepo)
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
+	testUserRepo := memstorage.NewTestUserRepository(userRepo)
+	userApp := user.GetUserServiceServer(&testUserRepo)
 
 	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
 	User1ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User1First", LastName: "User1Last", Email: "User1@test.com"})
@@ -216,16 +228,16 @@ func TestContextTimeoutFollowUser(t *testing.T) {
 	}
 }
 
-
-
 func TestContextTimeoutUnFollowUser(t *testing.T) {
 
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
 	// Mock repository with 10 seconds delay for accessing database
-	userRepo := memstorage.GetTestUserRepository()
-	userApp := user.GetUserServiceServer(&userRepo)
+	userStorage := memstorage.NewUserStorage()
+	userRepo := memstorage.NewUserRepository(userStorage)
+	testUserRepo := memstorage.NewTestUserRepository(userRepo)
+	userApp := user.GetUserServiceServer(&testUserRepo)
 
 	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
 	User1ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User1First", LastName: "User1Last", Email: "User1@test.com"})
