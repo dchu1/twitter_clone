@@ -29,7 +29,7 @@ export class DashboardComponent implements OnInit {
           response.posts.forEach(element => {
                  console.log(new Date(element.timestamp).toLocaleTimeString())
               element.timestamp = new Date(element.timestamp).toLocaleTimeString()
-          }
+          });
           this.newsData = response.posts
       }
         
