@@ -3,15 +3,63 @@ package user_test
 import (
 	"context"
 	"fmt"
-	"sync"
 	"reflect"
-	"testing"
 	"strconv"
+	"sync"
+	"testing"
 	"time"
+
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/memstorage"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/storage/etcd"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/storage/memstorage"
 	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
+
+func TestAddUserEtcd(t *testing.T) {
+	//userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	defer userStorage.Close()
+	userRepo := etcd.NewUserRepository(userStorage)
+	userApp := user.GetUserServiceServer(&userRepo)
+
+	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
+
+	userId, _ := userApp.CreateUser(context.Background(), &expected_user)
+	actual_user, _ := userApp.GetUser(context.Background(), userId)
+	if expected_user.Email != actual_user.AccountInformation.Email ||
+		expected_user.FirstName != actual_user.AccountInformation.FirstName ||
+		expected_user.LastName != actual_user.AccountInformation.LastName ||
+		expected_user.UserId != actual_user.AccountInformation.UserId {
+		t.Error(fmt.Sprintf("Test Failed: %s, %s, %s, %d", actual_user.AccountInformation.Email, actual_user.AccountInformation.FirstName, actual_user.AccountInformation.LastName, actual_user.AccountInformation.UserId))
+	}
+}
+
+func TestGetUsersEtcd(t *testing.T) {
+	//userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	defer userStorage.Close()
+	userRepo := etcd.NewUserRepository(userStorage)
+	userApp := user.GetUserServiceServer(&userRepo)
+	users := make(map[uint64]*userpb.AccountInformation)
+	for i := 1; i <= 10; i++ {
+		user := userpb.AccountInformation{UserId: uint64(i), FirstName: "test" + strconv.Itoa(i), LastName: "test" + strconv.Itoa(i), Email: strconv.Itoa(i) + "@test.edu"}
+		_, err := userApp.CreateUser(context.Background(), &user)
+		if err != nil {
+			t.Error(err.Error())
+		}
+		users[uint64(i)] = &user
+	}
+	ret, _ := userApp.GetUsers(context.Background(), &userpb.UserIds{UserIds: []uint64{uint64(1), uint64(2), uint64(3), uint64(4), uint64(5), uint64(6), uint64(7), uint64(8), uint64(9), uint64(10)}})
+	for _, actual_user := range ret.UserList {
+		expected_user := users[actual_user.AccountInformation.UserId]
+		if expected_user.Email != actual_user.AccountInformation.Email ||
+			expected_user.FirstName != actual_user.AccountInformation.FirstName ||
+			expected_user.LastName != actual_user.AccountInformation.LastName ||
+			expected_user.UserId != actual_user.AccountInformation.UserId {
+			t.Error(fmt.Sprintf("Test Failed: Got: %+v, Expected: %+v\n", actual_user.AccountInformation, expected_user))
+		}
+	}
+}
 
 func TestAddUser(t *testing.T) {
 	userStorage := memstorage.NewUserStorage()
@@ -53,7 +101,7 @@ func TestFollowUser(t *testing.T) {
 
 func TestUnFollowUser(t *testing.T) {
 	userStorage := memstorage.NewUserStorage()
-	userRepo := memstorage.NewUserRepository(userStorage)	
+	userRepo := memstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	User0ID, _ := userApp.CreateUser(context.Background(), &userpb.AccountInformation{FirstName: "User0First", LastName: "User0Last", Email: "User0@test.com"})
@@ -90,13 +138,13 @@ func TestContextAddUser(t *testing.T) {
 	userRepo := memstorage.NewUserRepository(userStorage)
 	testUserRepo := memstorage.NewTestUserRepository(userRepo)
 	userApp := user.GetUserServiceServer(&testUserRepo)
-	
+
 	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	cancel()
 	userApp.CreateUser(ctx, &expected_user)
 
 	users, _ := userApp.GetAllUsers(context.Background(), nil)
-	if len(users.UserList)>0{
+	if len(users.UserList) > 0 {
 		t.Error(fmt.Sprintf("Test Failed: User added even when context was cancelled"))
 	}
 }
@@ -155,7 +203,7 @@ func TestConcurrentFollow(t *testing.T) {
 		go func(userId uint64) {
 			defer wg.Done()
 			for k := 0; k < numUsers; k++ {
-				userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: userId, FollowUserId:uint64(k)})
+				userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: userId, FollowUserId: uint64(k)})
 			}
 		}(uint64(i))
 	}
@@ -163,9 +211,9 @@ func TestConcurrentFollow(t *testing.T) {
 	wg.Wait()
 
 	for i := 1; i < numUsers; i++ {
-		user, _ := userApp.GetUser(context.Background(), &userpb.UserId{UserId:uint64(i)})
-		if len(user.Following)!= (numUsers-1){
-			t.Error(fmt.Sprintf("Following map of user %d ",i))
+		user, _ := userApp.GetUser(context.Background(), &userpb.UserId{UserId: uint64(i)})
+		if len(user.Following) != (numUsers - 1) {
+			t.Error(fmt.Sprintf("Following map of user %d ", i))
 		}
 	}
 }
@@ -173,23 +221,22 @@ func TestConcurrentFollow(t *testing.T) {
 func TestContextTimeoutAddUser(t *testing.T) {
 	duration := 150 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
-	
+
 	// Mock repository with 10 seconds delay for accessing database
 	userStorage := memstorage.NewUserStorage()
 	userRepo := memstorage.NewUserRepository(userStorage)
 	testUserRepo := memstorage.NewTestUserRepository(userRepo)
 	userApp := user.GetUserServiceServer(&testUserRepo)
-	
+
 	expected_user := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	userApp.CreateUser(ctx, &expected_user)
 
 	users, _ := userApp.GetAllUsers(context.Background(), nil)
-	if len(users.UserList)>0{
+	if len(users.UserList) > 0 {
 		t.Error(fmt.Sprintf("Test Failed: User added even when context was cancelled"))
 	}
 	cancel()
 }
-
 
 func TestContextTimeoutFollowUser(t *testing.T) {
 
@@ -212,7 +259,7 @@ func TestContextTimeoutFollowUser(t *testing.T) {
 
 	//User follow should be unsuccessful because of timeout
 	userApp.FollowUser(ctx, &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
-	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})	
+	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})
 
 	u0, _ := userApp.GetUser(context.Background(), User0ID)
 	u1, _ := userApp.GetUser(context.Background(), User1ID)
@@ -247,9 +294,8 @@ func TestContextTimeoutUnFollowUser(t *testing.T) {
 	User1FollowerList := make(map[uint64]uint64)
 	User2FollowerList := make(map[uint64]uint64)
 
-	
 	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
-	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})	
+	userApp.FollowUser(context.Background(), &userpb.FollowRequest{UserId: User0ID.UserId, FollowUserId: User2ID.UserId})
 	//User unfollow should be unsuccessful because of timeout
 	userApp.UnFollowUser(ctx, &userpb.UnFollowRequest{UserId: User0ID.UserId, FollowUserId: User1ID.UserId})
 
