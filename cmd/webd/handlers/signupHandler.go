@@ -26,7 +26,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	_, err = UserServiceClient.CreateUser(r.Context(), &userpb.AccountInformation{FirstName: reqMessage.Firstname, LastName: reqMessage.Lastname, Email: reqMessage.Email})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		APIResponse(w, r, http.StatusInternalServerError, "Signup unsuccessful", make(map[string]string))
 		return
 	}
 	_, err = AuthClient.AddCredential(r.Context(), &authpb.UserCredential{Username: reqMessage.Email, Password: reqMessage.Password})
