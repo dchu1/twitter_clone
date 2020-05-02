@@ -5,7 +5,9 @@ import (
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/storage"
+	etcdstorage "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/storage/etcd"
+	memstorage "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/storage/memstorage"
+	"go.etcd.io/etcd/clientv3"
 )
 
 const (
@@ -37,8 +39,12 @@ func (s *authServer) GetUserId(ctx context.Context, sess *pb.AuthToken) (*pb.Use
 	return s.authRepository.GetUserId(ctx, sess)
 }
 
+func GetEtcdAuthServer(client *clientv3.Client) *authServer {
+	return &authServer{authRepository: etcdstorage.GetAuthRepository(client)}
+}
+
 func GetAuthServer() *authServer {
-	return &authServer{authRepository: storage.GetAuthRepository()}
+	return &authServer{authRepository: memstorage.GetAuthRepository()}
 }
 
 func GetTestAuthServer() *authServer {
