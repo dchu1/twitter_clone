@@ -17,12 +17,12 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		reqMessage := handlermodels.CreatePostRequest{}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Error while reading request", make(map[string]string))
 			return
 		}
 		err = json.Unmarshal(body, &reqMessage)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Error while unmarshalling", make(map[string]string))
 			return
 		}
 

@@ -17,19 +17,19 @@ func FollowCreateHandler(w http.ResponseWriter, r *http.Request) {
 		reqMessage := handlermodels.FollowRequest{}
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Error while reading request", make(map[string]string))
 			return
 		}
 		err = json.Unmarshal(b, &reqMessage)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			APIResponse(w, r, http.StatusBadRequest, "Error while unmarshalling", make(map[string]string))
 			return
 		}
 
 		user := r.Context().Value("user").(*authpb.UserId)
 		_, err = UserServiceClient.FollowUser(r.Context(), &userpb.FollowRequest{UserId: user.UserId, FollowUserId: reqMessage.UserId})
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			APIResponse(w, r, http.StatusInternalServerError, "User not followed", make(map[string]string))
 			return
 		}
 		APIResponse(w, r, 200, "User followed", make(map[string]string)) // send data to client side
