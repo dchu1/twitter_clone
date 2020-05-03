@@ -48,7 +48,13 @@ func GetAuthServer() *authServer {
 }
 
 func GetTestAuthServer() *authServer {
-	a := storage.GetAuthRepository()
-	b := storage.GetTestAuthRepository(a)
+	a := memstorage.GetAuthRepository()
+	b := memstorage.GetTestAuthRepository(a)
+	return &authServer{authRepository: b}
+}
+
+func GetTestEtcdAuthServer(client *clientv3.Client) *authServer {
+	a := etcdstorage.GetAuthRepository(client)
+	b := etcdstorage.GetTestAuthRepository(a)
 	return &authServer{authRepository: b}
 }
