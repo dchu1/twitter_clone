@@ -9,22 +9,18 @@ import (
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
 	postpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
-	postetcd "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/storage/etcd"
 	postmemstorage "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/storage/memstorage"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
-	useretcd "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/storage/etcd"
+	usermemstorage "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/storage/memstorage"
 	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
 )
 
-func TestCreatePostEtcd(t *testing.T) {
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+func TestCreatePost(t *testing.T) {
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -43,18 +39,16 @@ func TestCreatePostEtcd(t *testing.T) {
 	}
 }
 
-func TestConcurrentCreatePostEtcd(t *testing.T) {
+func TestConcurrentCreatePost(t *testing.T) {
 	var wg sync.WaitGroup
-	numPosts := 10
+	numPosts := 100
 	wg.Add(numPosts)
 
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -75,23 +69,20 @@ func TestConcurrentCreatePostEtcd(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(post.Posts) != 10 {
+	if len(post.Posts) != 100 {
 		t.Error("Not all posts added")
 	}
 }
-func TestContextCreatePostEtcd(t *testing.T) {
+func TestContextCreatePost(t *testing.T) {
 	// Create a new context, with its cancellation function
 	// from the original context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -105,20 +96,18 @@ func TestContextCreatePostEtcd(t *testing.T) {
 		t.Error("post created even after cancelling context")
 	}
 }
-func TestContextTimeoutCreatePostEtcd(t *testing.T) {
+func TestContextTimeoutCreatePost(t *testing.T) {
 	// Create a new context, with its cancellation function
 	// from the original context
 	ctx, cancel := context.WithCancel(context.Background())
 	//cancel()
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
 	postApp := post.GetPostServiceServer(&testPostRepo)
 
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -134,15 +123,12 @@ func TestContextTimeoutCreatePostEtcd(t *testing.T) {
 		t.Error("post still exists")
 	}
 }
-func TestGetPostEtcd(t *testing.T) {
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+func TestGetPost(t *testing.T) {
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -172,21 +158,18 @@ func TestGetPostEtcd(t *testing.T) {
 		t.Error("Post UserId not set properly")
 	}
 }
-func TestConcurrentGetPostEtcd(t *testing.T) {
+func TestConcurrentGetPost(t *testing.T) {
 	var wg sync.WaitGroup
 	numPosts := 100
 	wg.Add(numPosts)
 	var postList []*postpb.Post
 	postListmu := sync.Mutex{}
 
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -219,17 +202,14 @@ func TestConcurrentGetPostEtcd(t *testing.T) {
 
 	}
 }
-func TestContextGetPostEtcd(t *testing.T) {
+func TestContextGetPost(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -244,19 +224,17 @@ func TestContextGetPostEtcd(t *testing.T) {
 		t.Error("Context error not thrown")
 	}
 }
-func TestContextTimeoutGetPostEtcd(t *testing.T) {
+func TestContextTimeoutGetPost(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
 	postApp := post.GetPostServiceServer(&testPostRepo)
 
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -272,15 +250,12 @@ func TestContextTimeoutGetPostEtcd(t *testing.T) {
 		t.Error("Context error not thrown")
 	}
 }
-func TestGetPostsEtcd(t *testing.T) {
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+func TestGetPosts(t *testing.T) {
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -314,21 +289,18 @@ func TestGetPostsEtcd(t *testing.T) {
 		t.Error("userID not propert for post 1")
 	}
 }
-func TestConcurrentGetPostsEtcd(t *testing.T) {
+func TestConcurrentGetPosts(t *testing.T) {
 	var wg sync.WaitGroup
 	numPosts := 100
 	wg.Add(numPosts)
 	var postList []*postpb.Posts
 	postListmu := sync.Mutex{}
 
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -364,17 +336,14 @@ func TestConcurrentGetPostsEtcd(t *testing.T) {
 
 	}
 }
-func TestContextGetPostsEtcd(t *testing.T) {
+func TestContextGetPosts(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -393,18 +362,16 @@ func TestContextGetPostsEtcd(t *testing.T) {
 		t.Error("Context cancelled still error not thrown")
 	}
 }
-func TestContextTimeoutGetPostsEtcd(t *testing.T) {
+func TestContextTimeoutGetPosts(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
 	postApp := post.GetPostServiceServer(&testPostRepo)
 
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -423,15 +390,12 @@ func TestContextTimeoutGetPostsEtcd(t *testing.T) {
 		t.Error("Context cancelled still error not thrown")
 	}
 }
-func TestGetPostsByAuthorEtcd(t *testing.T) {
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+func TestGetPostsByAuthor(t *testing.T) {
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -465,21 +429,18 @@ func TestGetPostsByAuthorEtcd(t *testing.T) {
 		t.Error("userID not propert for post 1")
 	}
 }
-func TestConcurrentGetPostsByAuthorEtcd(t *testing.T) {
+func TestConcurrentGetPostsByAuthor(t *testing.T) {
 	var wg sync.WaitGroup
 	numPosts := 100
 	wg.Add(numPosts)
 	var postList []*postpb.Posts
 	postListmu := sync.Mutex{}
 
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -516,17 +477,13 @@ func TestConcurrentGetPostsByAuthorEtcd(t *testing.T) {
 
 	}
 }
-func TestContextGetPostsByAuthorEtcd(t *testing.T) {
+func TestContextGetPostsByAuthor(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postRepo := postmemstorage.GetPostRepository()
 	postApp := post.GetPostServiceServer(&postRepo)
-
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
@@ -545,18 +502,16 @@ func TestContextGetPostsByAuthorEtcd(t *testing.T) {
 		t.Error("Context cancelled but the error is not thrown")
 	}
 }
-func TestContextTimeoutGetPostsByAuthorEtcd(t *testing.T) {
+func TestContextTimeoutGetPostsByAuthor(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
-	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer postStorage.Close()
-	postRepo := postetcd.NewPostRepository(postStorage)
+	postStorage := postmemstorage.NewPostStorage()
+	postRepo := postmemstorage.NewPostRepository(postStorage)
 	testPostRepo := postmemstorage.NewTestPostRepository(postRepo)
 	postApp := post.GetPostServiceServer(&testPostRepo)
 
-	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	defer userStorage.Close()
-	userRepo := useretcd.NewUserRepository(userStorage)
+	userStorage := usermemstorage.NewUserStorage()
+	userRepo := usermemstorage.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}

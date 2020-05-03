@@ -486,43 +486,27 @@ func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info 
 }
 
 func (userRepo *userRepository) getUserId(ctx context.Context) (uint64, error) {
-	// i don't know why i need this result channel...should be able to get
-	// the response of the get call from the txn response...
-	result := make(chan uint64, 1)
+	// I don't know why the Txn Response is empty... I would prefer to read the value
+	// from the transaction response rather than directly updating redId
 	var err error
+	var retId uint64
 	getId := func(stm concurrency.STM) error {
 		// what happens if get fails? It just never returns, so how do I account for that?
 		resp := stm.Get(userIdGenKey)
-
 		// if resp = "", we need to initialize first
-		if resp == "" {
-			resp = "1"
-		}
-
+		// if resp == "" {
+		// 	resp = "1"
+		// }
 		id, err := strconv.ParseUint(resp, 10, 64)
 		if err != nil {
-			result <- uint64(0)
 			return err
 		}
-		result <- id
+		retId = id
 		stm.Put(userIdGenKey, strconv.FormatUint(id+1, 10))
 		return nil
 	}
 	_, err = concurrency.NewSTM(userRepo.storage, getId)
-	if err != nil {
-		return 0, err
-	}
-	return <-result, nil
-
-	// select {
-	// case ret := <-result:
-	// 	if ret == uint64(0) {
-	// 		err = errors.New("could not get user id")
-	// 	}
-	// 	return ret, err
-	// case <-ctx.Done():
-	// 	return uint64(0), ctx.Err()
-	// }
+	return retId, err
 }
 
 func findRange(array []uint64) ([2]uint64, error) {

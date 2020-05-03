@@ -47,3 +47,7 @@ func (s *postServiceServer) GetPostsByAuthors(ctx context.Context, userIDs *pb.U
 func GetPostServiceServer(pr *PostRepository) *postServiceServer {
 	return &postServiceServer{postRepo: *pr}
 }
+
+func GetEtcdPostServiceServer(pr *PostRepository) *postServiceServer {
+	return &postServiceServer{postRepo: *pr}
+}

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package postpb;
+
+import "google/protobuf/timestamp.proto";
+
+service PostService{
+    rpc CreatePost(Post) returns (PostID) {}
+    rpc GetPost(PostID) returns (Post) {}
+    rpc GetPosts(PostIDs) returns (Posts) {}
+    rpc GetPostsByAuthors(UserIDs) returns (Posts) {}
+    rpc UpdatePost(PostIDs) returns (Void) {}
+    rpc DeletePost(PostIDs) returns (Void) {}
+}
+
+message Void{}
+
+message Post{
+    uint64 postID = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    string message = 3;
+    uint64 userId = 4;
+}
+
+message Posts{
+    repeated Post posts = 1;
+}
+
+message PostID{
+    uint64 postID = 1;
+}
+
+message PostIDs{
+    repeated uint64 postIDs = 1;
+}
+
+message UserIDs{
+    repeated uint64 userIDs = 1;
+}
