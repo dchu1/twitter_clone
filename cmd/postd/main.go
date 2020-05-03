@@ -8,7 +8,7 @@ import (
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/config"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/post/storage/etcd"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/storage/etcd"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
