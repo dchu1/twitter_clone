@@ -20,6 +20,10 @@ ports = ["50052"]
 
 [authservice]
 ports = ["50051"]
+
+[storage]
+storage = ["etcd"]
+
 `)
 
 // NewConfig reads a config into the package level viper instance
