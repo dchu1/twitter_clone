@@ -11,3 +11,6 @@ ports = ["50052"]
 
 [authservice]
 ports = ["50051"]
+
+[storage]
+storage = ["etcd"]
