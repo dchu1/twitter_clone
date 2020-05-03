@@ -15,14 +15,12 @@ import (
 
 func main() {
 
-
 	// Read Config
 	runtimeViper := viper.New()
 	config.NewRuntimeConfig(runtimeViper, ".")
 
-
-	storage := runtimeViper.GetStringSlice("storage.storage")[0]
-
+	// storage := runtimeViper.GetStringSlice("storage.storage")[0]
+	storage := "etcd"
 
 	// Start server
 	lis, err := net.Listen("tcp", "localhost:"+runtimeViper.GetStringSlice("authservice.ports")[0])
