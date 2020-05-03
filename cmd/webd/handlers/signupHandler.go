@@ -15,12 +15,12 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	reqMessage := handlermodels.CreateUserRequest{}
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		APIResponse(w, r, http.StatusInternalServerError, "Signup unsuccessful", make(map[string]string)) // send data to client side
+		APIResponse(w, r, http.StatusInternalServerError, "Error in reading request", make(map[string]string)) // send data to client side
 		return
 	}
 	err = json.Unmarshal(b, &reqMessage)
 	if err != nil {
-		APIResponse(w, r, http.StatusInternalServerError, "Signup unsuccessful", make(map[string]string)) // send data to client side
+		APIResponse(w, r, http.StatusInternalServerError, "Error in unmarshalling", make(map[string]string)) // send data to client side
 		return
 	}
 
