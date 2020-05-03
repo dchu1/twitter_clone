@@ -35,7 +35,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if res.Authenticated {
 		user, err := UserServiceClient.GetUserIdByUsername(r.Context(), &userpb.UserName{Email: user.Email})
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			APIResponse(w, r, http.StatusInternalServerError, "Login unsuccessful", make(map[string]string)) // send data to client side
 			return
 		}
 
