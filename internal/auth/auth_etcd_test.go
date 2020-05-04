@@ -17,7 +17,7 @@ func TestEtcdConcurrentCredential(t *testing.T) {
 	numUsers := 100
 	wg.Add(numUsers)
 
-	client, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	client, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	authServer := server.GetEtcdAuthServer(client)
 	credsArray := make([]*pb.UserCredential, numUsers)
 	for i := 0; i < numUsers; i++ {
@@ -51,7 +51,7 @@ func TestEtcdConcurrentCredential(t *testing.T) {
 
 func TestEtcdContextTimeoutCredential(t *testing.T) {
 	var err error
-	client, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	client, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	authServer := server.GetTestEtcdAuthServer(client)
 	errchan := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -77,7 +77,7 @@ func TestEtcdContextTimeoutCredential(t *testing.T) {
 
 func TestEtcdContextTimeoutAuthToken(t *testing.T) {
 	var err error
-	client, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	client, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	authServer := server.GetTestEtcdAuthServer(client)
 	resultchan := make(chan *pb.AuthToken)
 	errchan := make(chan error)
@@ -104,7 +104,7 @@ func TestEtcdContextTimeoutAuthToken(t *testing.T) {
 
 func TestEtcdContextTimeoutRemoveAuthToken(t *testing.T) {
 	var err error
-	client, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	client, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	authServer := server.GetTestEtcdAuthServer(client)
 	token, err := authServer.GetAuthToken(context.Background(), &pb.UserId{UserId: uint64(1)})
 

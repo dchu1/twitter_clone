@@ -30,7 +30,7 @@ func main() {
 	s := grpc.NewServer()
 	fmt.Println("Server running on port", "localhost:"+runtimeViper.GetStringSlice("authservice.ports")[0])
 	if storage == "etcd" {
-		client, _ := etcd.NewClient([]string{"http://localhost:2379"})
+		client, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 		pb.RegisterAuthenticationServer(s, service.GetEtcdAuthServer(client))
 	} else {
 		pb.RegisterAuthenticationServer(s, service.GetAuthServer())

@@ -47,12 +47,14 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 
 		var buf bytes.Buffer
 		if err := gob.NewEncoder(&buf).Encode(post); err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
 		}
 
 		_, err := postRepo.storage.Put(ctx, postPrefix+strconv.FormatUint(post.PostID, 10), buf.String())
 		if err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
 		}
 		result <- post.PostID
 	}()
@@ -67,6 +69,8 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 		go func() {
 			select {
 			case <-result:
+				// fmt.Print("vrevervev")
+				// fmt.Print(postvalue)
 				postRepo.DeletePost(context.Background(), p.PostID)
 				return
 			case <-errorchan:
@@ -110,12 +114,12 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 		var post pb.Post
 		resp, err := postRepo.storage.Get(ctx, postPrefix+strconv.FormatUint(postID, 10))
 		if err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
 		}
 		dec := gob.NewDecoder(bytes.NewReader(resp.Kvs[0].Value))
 		if err := dec.Decode(&post); err != nil {
-			log.Fatalf("could not decode message (%v)", err)
-			errorchan <- errors.New("post not found")
+			errorchan <- errors.New("Could not decode message")
 		} else {
 			result <- &post
 		}
@@ -143,6 +147,10 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 			return
 		}
 		resp, err := postRepo.storage.Get(ctx, postPrefix+strconv.FormatUint(extent[0], 10), clientv3.WithRange(postPrefix+strconv.FormatUint(extent[1]+1, 10)))
+		if err != nil {
+			errorchan <- err
+			return
+		}
 		cp := make([]*pb.Post, 0, len(postIDs))
 		for _, v := range resp.Kvs {
 			var post pb.Post
@@ -195,7 +203,6 @@ func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) e
 		}
 		_, err = postRepo.storage.Delete(ctx, postPrefix+strconv.FormatUint(postID, 10))
 		if err != nil {
-			log.Fatal(err)
 			errorchan <- err
 		} else {
 			buffer <- postEntry
@@ -218,12 +225,14 @@ func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) e
 				postEntry := <-buffer
 				var buf bytes.Buffer
 				if err := gob.NewEncoder(&buf).Encode(postEntry); err != nil {
-					log.Fatal(err)
+					errorchan <- err
+					return
 				}
 
 				_, err = postRepo.storage.Put(ctx, postPrefix+strconv.FormatUint(postEntry.PostID, 10), buf.String())
 				if err != nil {
-					log.Fatal(err)
+					errorchan <- err
+					return
 				}
 				return
 			}
@@ -242,7 +251,6 @@ func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []
 
 		resp, err := postRepo.storage.Get(ctx, postPrefix, clientv3.WithPrefix())
 		if err != nil {
-			log.Fatal(err)
 			errorchan <- err
 			return
 		}
@@ -252,7 +260,8 @@ func (postRepo *postRepository) GetPostsByAuthor(ctx context.Context, userIDs []
 			var post pb.Post
 			dec := gob.NewDecoder(bytes.NewReader(v.Value))
 			if err := dec.Decode(&post); err != nil {
-				log.Fatalf("could not decode message (%v)", err)
+				errorchan <- errors.New("could not decode message")
+				return
 			}
 			for _, u := range userIDs {
 				if post.UserId == u {

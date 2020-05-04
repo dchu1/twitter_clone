@@ -27,7 +27,6 @@ export class DashboardComponent implements OnInit {
       this.newsData = []
       if (response["posts"]){
           response.posts.forEach(element => {
-                 console.log(new Date(element.timestamp).toLocaleTimeString())
               element.timestamp = new Date(element.timestamp).toLocaleTimeString()
           });
           this.newsData = response.posts
@@ -88,6 +87,7 @@ export class DashboardComponent implements OnInit {
     }
     this.apiService.postData("post", body).subscribe((response: any) => {
       console.log("[Response]:: ", response);
+      this.getNewsFeed()
       this.router.navigate(['./home']);
       this.newTweet = ""
     },
