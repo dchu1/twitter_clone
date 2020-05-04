@@ -5,7 +5,8 @@ import (
 	"context"
 	"encoding/gob"
 	"errors"
-	"log"
+	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user"
@@ -15,9 +16,10 @@ import (
 	"go.etcd.io/etcd/clientv3/concurrency"
 )
 
-const userPrefix string = "User/"
-const followingPrefix string = "Following"
-const userIdGenKey string = "NextUserId"
+const userPrefix string = "/User/"
+const followingPrefix string = "/Following"
+const accountInfoPrefix string = "/AccountInfo"
+const userIdGenKey string = "/NextUserId"
 
 type userRepository struct {
 	storage *clientv3.Client
@@ -38,7 +40,6 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 	result := make(chan uint64, 1)
 	errorchan := make(chan error, 1)
 
-	// Ignore commented out code
 	// go func() {
 	// 	id, err := userRepo.getUserId(ctx)
 	// 	if err != nil {
@@ -46,21 +47,15 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 	// 		return
 	// 	}
 	// 	info.UserId = id
-	// 	// user.AccountInformation = info
-	// 	// user.Followers = make(map[uint64]uint64)
-	// 	// user.Following = make(map[uint64]uint64)
 
 	// 	var buf bytes.Buffer
-	// 	var buf2 bytes.Buffer
 	// 	if err := gob.NewEncoder(&buf).Encode(*info); err != nil {
 	// 		log.Fatal(err)
 	// 	}
-	// 	if err := gob.NewEncoder(&buf2).Encode(*info); err != nil {
-	// 		log.Fatal(err)
-	// 	}
 
+	// 	// We'll check if the user already exists, then do a write if it does not
 	// 	createUser := func(stm concurrency.STM) error {
-	// 		if _, err := userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), buf.String()); err != nil {
+	// 		if _, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), buf.String()); err != nil {
 	// 			return err
 	// 		}
 	// 		if _, err = userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10)+followingPrefix, buf2.String()); err != nil {
@@ -77,21 +72,27 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 	// }()
 
 	go func() {
-		//info.UserId = 0
 		user := new(pb.User)
-		info.UserId, _ = userRepo.getUserId(ctx)
+		userId, err := userRepo.getUserId(ctx)
+		info.UserId = userId
+		if err != nil {
+			errorchan <- err
+			return
+		}
 		user.AccountInformation = info
 		user.Followers = make(map[uint64]uint64)
 		user.Following = make(map[uint64]uint64)
 
-		var buf bytes.Buffer
-		if err := gob.NewEncoder(&buf).Encode(user); err != nil {
-			log.Fatal(err)
-		}
-
-		_, err := userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), buf.String())
+		userEncoded, err := encodeUser(user)
 		if err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
+		}
+		fmt.Printf("Putting: %s\n", userPrefix+strconv.FormatUint(info.UserId, 10))
+		_, err = userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), userEncoded)
+		if err != nil {
+			errorchan <- err
+			return
 		}
 		result <- info.UserId
 	}()
@@ -124,16 +125,21 @@ func (userRepo *userRepository) GetUser(ctx context.Context, userID uint64) (*pb
 	errorchan := make(chan error, 1)
 
 	go func() {
-		var user pb.User
 		resp, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(userID, 10))
 		if err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
 		}
-		dec := gob.NewDecoder(bytes.NewReader(resp.Kvs[0].Value))
-		if err := dec.Decode(&user); err != nil {
-			log.Fatalf("could not decode message (%v)", err)
+		if resp.Kvs == nil {
+			errorchan <- errors.New("user not found")
+			return
 		}
-		result <- &user
+		user, err := decodeUser(resp.Kvs[0].Value)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		result <- user
 	}()
 
 	select {
@@ -157,15 +163,21 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 			errorchan <- err
 			return
 		}
-		resp, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(extent[0], 10), clientv3.WithRange(userPrefix+strconv.FormatUint(extent[1]+1, 10)))
+		resp, err := userRepo.storage.Get(ctx, userPrefix+extent[0], clientv3.WithRange(userPrefix+extent[1]))
 		cp := make([]*pb.User, 0, len(userIDs))
+		userIdLookup := make(map[uint64]struct{})
+		for _, v := range userIDs {
+			userIdLookup[v] = struct{}{}
+		}
 		for _, v := range resp.Kvs {
-			var user pb.User
-			dec := gob.NewDecoder(bytes.NewReader(v.Value))
-			if err := dec.Decode(&user); err != nil {
-				log.Fatalf("could not decode message (%v)", err)
+			user, err := decodeUser(v.Value)
+			if err != nil {
+				errorchan <- err
+				return
 			}
-			cp = append(cp, &user)
+			if _, exists := userIdLookup[user.AccountInformation.UserId]; exists {
+				cp = append(cp, user)
+			}
 		}
 		result <- cp
 	}()
@@ -186,18 +198,19 @@ func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, er
 	errorchan := make(chan error, 1)
 
 	go func() {
-		resp, err := userRepo.storage.Get(ctx, "User/", clientv3.WithPrefix())
+		resp, err := userRepo.storage.Get(ctx, userPrefix, clientv3.WithPrefix())
 		if err != nil {
-			log.Fatal(err)
+			errorchan <- err
+			return
 		}
 		cp := make([]*pb.User, 0, 100)
 		for _, v := range resp.Kvs {
-			var user pb.User
-			dec := gob.NewDecoder(bytes.NewReader(v.Value))
-			if err := dec.Decode(&user); err != nil {
-				log.Fatalf("could not decode message (%v)", err)
+			user, err := decodeUser(v.Value)
+			if err != nil {
+				errorchan <- err
+				return
 			}
-			cp = append(cp, &user)
+			cp = append(cp, user)
 		}
 		result <- cp
 	}()
@@ -214,226 +227,243 @@ func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, er
 
 // FollowUser updates the following user's following map, and the followed user's followers map
 // to reflect that a user is following another user
-func (userRepo *userRepository) FollowUser(ctx context.Context, followingUserID uint64, UserIDToFollow uint64) error {
+func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint64, followedId uint64) error {
+	result := make(chan error, 1)
+	go func() {
+		followUser := func(stm concurrency.STM) error {
+			// Get Values
+			followerK := userPrefix + strconv.FormatUint(followerId, 10)
+			followedK := userPrefix + strconv.FormatUint(followedId, 10)
+			followerV, followedV := stm.Get(followerK), stm.Get(followedK)
 
-	// result := make(chan error, 1)
-	// go func() {
-	// 	if followingUserID == UserIDToFollow {
-	// 		result <- errors.New("duplicate user ids")
-	// 	} else {
+			// Decode
+			follower, err := decodeUser([]byte(followerV))
+			if err != nil {
+				return err
+			}
+			followed, err := decodeUser([]byte(followedV))
+			if err != nil {
+				return err
+			}
 
-	// 		//Add userID to be followed in the following list of user who wants to follow
-	// 		followingUserIDObject, err := userRepo.storage.getUserEntry(followingUserID)
-	// 		if err != nil {
-	// 			result <- err
-	// 		} else {
-	// 			followingUserIDObject.followingRWMu.Lock()
-	// 			followingUserIDObject.user.Following[UserIDToFollow] = UserIDToFollow
-	// 			followingUserIDObject.followingRWMu.Unlock()
+			// Modify
+			follower.Following[followedId] = followedId
+			followed.Followers[followerId] = followerId
 
-	// 			//Add userID who is following in the followers list of the user being followed
-	// 			UserIDToFollowObject, err := userRepo.storage.getUserEntry(UserIDToFollow)
-	// 			if err != nil {
-	// 				result <- err
-	// 			} else {
-	// 				UserIDToFollowObject.followersRWMu.Lock()
-	// 				UserIDToFollowObject.user.Followers[followingUserID] = followingUserID
-	// 				UserIDToFollowObject.followersRWMu.Unlock()
+			// Encode
+			followerEncoded, err := encodeUser(follower)
+			if err != nil {
+				return err
+			}
+			followedEncoded, err := encodeUser(followed)
+			if err != nil {
+				return err
+			}
 
-	// 				result <- nil
-	// 			}
-	// 		}
-	// 	}
-	// }()
+			// Put
+			stm.Put(followerK, followerEncoded)
+			stm.Put(followedK, followedEncoded)
+			return nil
+		}
+		if _, err := concurrency.NewSTM(userRepo.storage, followUser); err != nil {
+			result <- err
+			return
+		}
+		result <- nil
+	}()
 
-	// select {
-	// case res := <-result:
-	// 	return res
-	// case <-ctx.Done():
-	// 	// listen to the result channel in case the operation was successful, then unfollow
-	// 	go func() {
-	// 		res := <-result
-	// 		if res == nil {
-	// 			userRepo.UnFollowUser(context.Background(), followingUserID, UserIDToFollow)
-	// 		}
-	// 	}()
-	// 	return ctx.Err()
-	// }
+	select {
+	case res := <-result:
+		return res
+	case <-ctx.Done():
+		// listen to the result channel in case the operation was successful, then unfollow
+		go func() {
+			res := <-result
+			if res == nil {
+				userRepo.UnFollowUser(context.Background(), followerId, followedId)
+			}
+		}()
+		return ctx.Err()
+	}
 	return nil
 }
 
 // UnFollowUser updates the following user's following map, and the followed user's followers map
 // to reflect that a user has unfollowed another user
-func (userRepo *userRepository) UnFollowUser(ctx context.Context, followingUserID uint64, UserIDToUnfollow uint64) error {
+func (userRepo *userRepository) UnFollowUser(ctx context.Context, followerId uint64, followedId uint64) error {
+	result := make(chan error, 1)
 
-	// result := make(chan error, 1)
+	go func() {
+		unfollowUser := func(stm concurrency.STM) error {
+			// Get Values
+			followerK := userPrefix + strconv.FormatUint(followerId, 10)
+			followedK := userPrefix + strconv.FormatUint(followedId, 10)
+			followerV, followedV := stm.Get(followerK), stm.Get(followedK)
 
-	// go func() {
-	// 	if followingUserID == UserIDToUnfollow {
-	// 		result <- errors.New("duplicate user ids")
-	// 	} else {
+			// Decode
+			follower, err := decodeUser([]byte(followerV))
+			if err != nil {
+				return err
+			}
+			followed, err := decodeUser([]byte(followedV))
+			if err != nil {
+				return err
+			}
 
-	// 		//Remove userID to be unfollowed from the following list of the user initiating unfollow request
-	// 		followingUserIDObject, err := userRepo.storage.getUserEntry(followingUserID)
-	// 		if err != nil {
-	// 			result <- err
-	// 		} else {
-	// 			followingUserIDObject.followingRWMu.Lock()
-	// 			newfollowing := followingUserIDObject.user.Following
-	// 			delete(newfollowing, UserIDToUnfollow)
-	// 			followingUserIDObject.user.Following = newfollowing
-	// 			followingUserIDObject.followingRWMu.Unlock()
+			// Modify
+			delete(follower.Following, followedId)
+			delete(followed.Followers, followerId)
 
-	// 			//Remove userID who is initiating the unfollow request from the followers list of the user being unfollowed
-	// 			UserIDToUnfollowObject, err := userRepo.storage.getUserEntry(UserIDToUnfollow)
-	// 			if err != nil {
-	// 				result <- err
-	// 			} else {
-	// 				UserIDToUnfollowObject.followersRWMu.Lock()
-	// 				newfollowers := UserIDToUnfollowObject.user.Followers
-	// 				delete(newfollowers, followingUserID)
-	// 				UserIDToUnfollowObject.user.Followers = newfollowers
-	// 				UserIDToUnfollowObject.followersRWMu.Unlock()
+			// Encode
+			followerEncoded, err := encodeUser(follower)
+			if err != nil {
+				return err
+			}
+			followedEncoded, err := encodeUser(followed)
+			if err != nil {
+				return err
+			}
 
-	// 				result <- nil
-	// 			}
-	// 		}
-	// 	}
-	// }()
+			// Put
+			stm.Put(followerK, followerEncoded)
+			stm.Put(followedK, followedEncoded)
 
-	// select {
-	// case res := <-result:
-	// 	return res
-	// case <-ctx.Done():
-	// 	// listen to the result channel in case the operation was successful, then follow
-	// 	go func() {
-	// 		res := <-result
-	// 		if res == nil {
-	// 			userRepo.FollowUser(context.Background(), followingUserID, UserIDToUnfollow)
-	// 		}
-	// 	}()
-	// 	return ctx.Err()
-	// }
+			return nil
+		}
+		if _, err := concurrency.NewSTM(userRepo.storage, unfollowUser); err != nil {
+			result <- err
+			return
+		}
+		result <- nil
+	}()
+
+	select {
+	case res := <-result:
+		return res
+	case <-ctx.Done():
+		// listen to the result channel in case the operation was successful, then follow
+		go func() {
+			res := <-result
+			if res == nil {
+				userRepo.FollowUser(context.Background(), followerId, followedId)
+			}
+		}()
+		return ctx.Err()
+	}
 	return nil
 }
 
 // GetUserByUsername returns a user object by their username
 func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email string) (*pb.User, error) {
-	// result := make(chan *pb.User, 1)
-	// errorchan := make(chan error, 1)
+	result := make(chan *pb.User, 1)
+	errorchan := make(chan error, 1)
 
-	// go func() {
-	// 	userRepo.storage.usersRWMu.RLock()
+	go func() {
+		var idx int
+		found := false
+		users, err := userRepo.GetAllUsers(ctx)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		for i, v := range users {
+			if v.AccountInformation.Email == email {
+				found = true
+				idx = i
+				break
+			}
+		}
+		if found {
+			result <- users[idx]
+		} else {
+			errorchan <- errors.New("user not found")
+		}
+	}()
 
-	// 	exists := false
-
-	// 	for _, v := range userRepo.storage.users {
-	// 		if v.user.AccountInformation.Email == email {
-	// 			result <- v.user
-	// 			exists = true
-	// 		}
-	// 	}
-	// 	if !exists {
-	// 		errorchan <- errors.New("user not found")
-	// 	}
-	// 	userRepo.storage.usersRWMu.RUnlock()
-	// }()
-
-	// select {
-	// case user := <-result:
-	// 	return user, nil
-	// case err := <-errorchan:
-	// 	return nil, err
-	// case <-ctx.Done():
-	// 	return nil, ctx.Err()
-	// }
+	select {
+	case user := <-result:
+		return user, nil
+	case err := <-errorchan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 	return nil, nil
 }
 
 // GetFollowing returns an array of users that the given user is following
 func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
-	// result := make(chan []*pb.User, 1)
-	// errorchan := make(chan error, 1)
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
-	// go func() {
-	// 	// Get the user object from the users map
-	// 	userEntry, err := userRepo.storage.getUserEntry(userId)
-	// 	if err != nil {
-	// 		errorchan <- err
-	// 	} else {
-	// 		userEntry.followingRWMu.RLock()
-	// 		defer userEntry.followingRWMu.RUnlock()
-	// 		databaseError := false
-	// 		tempArray := make([]*pb.User, 0, 100)
-	// 		for k := range userEntry.user.Following {
-	// 			followingEntry, err := userRepo.storage.getUserEntry(k)
-	// 			if err != nil {
-	// 				// if we have an error here, it means our following data structure has an entry inconsistent
-	// 				// with our user structure
-	// 				databaseError = true
-	// 				errorchan <- errors.New("database corruption")
-	// 				panic("database corruption")
-	// 			}
-	// 			tempArray = append(tempArray, followingEntry.user)
-	// 		}
-	// 		if !databaseError {
-	// 			result <- tempArray
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		user, err := userRepo.GetUser(ctx, userId)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		userIdArr := make([]uint64, 0, len(user.Following))
+		for k := range user.Following {
+			userIdArr = append(userIdArr, k)
+		}
+		users, err := userRepo.GetUsers(ctx, userIdArr)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		result <- users
+	}()
 
-	// select {
-	// case user := <-result:
-	// 	return user, nil
-	// case err := <-errorchan:
-	// 	return nil, err
-	// case <-ctx.Done():
-	// 	return nil, ctx.Err()
-	// }
+	select {
+	case user := <-result:
+		return user, nil
+	case err := <-errorchan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 	return nil, nil
 }
 
 // GetNotFollowing returns an array of users that the given user is not following
 func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint64) ([]*pb.User, error) {
+	result := make(chan []*pb.User, 1)
+	errorchan := make(chan error, 1)
 
-	// result := make(chan []*pb.User, 1)
-	// errorchan := make(chan error, 1)
+	go func() {
+		user, err := userRepo.GetUser(ctx, userId)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		userIdArr := make([]uint64, 0, len(user.Following))
+		for k := range user.Following {
+			userIdArr = append(userIdArr, k)
+		}
+		users, err := userRepo.GetAllUsers(ctx)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		// remove Users not in user's following list
+		filteredUsers := users[:0]
+		for _, v := range users {
+			if _, exists := user.Following[v.AccountInformation.UserId]; exists {
+				filteredUsers = append(filteredUsers, v)
+			}
+		}
 
-	// go func() {
-	// 	// Get the user object from the users map
-	// 	userEntry, err := userRepo.storage.getUserEntry(userId)
-	// 	if err != nil {
-	// 		errorchan <- err
-	// 	} else {
-	// 		userEntry.followingRWMu.RLock()
-	// 		defer userEntry.followingRWMu.RUnlock()
+		result <- filteredUsers
+	}()
 
-	// 		tempArray := make([]*pb.User, 0, 100)
-
-	// 		// Iterate through entire user list
-	// 		userRepo.storage.usersRWMu.RLock()
-	// 		defer userRepo.storage.usersRWMu.RUnlock()
-	// 		for k, v := range userRepo.storage.users {
-	// 			// check if user k exists in the user's following list. If not, add it to our
-	// 			// temp array
-	// 			_, exists := userEntry.user.Following[k]
-	// 			if !exists && k != userId {
-	// 				tempArray = append(tempArray, v.user)
-	// 			}
-	// 		}
-
-	// 		result <- tempArray
-	// 	}
-	// }()
-
-	// select {
-	// case user := <-result:
-	// 	return user, nil
-	// case err := <-errorchan:
-	// 	return nil, err
-	// case <-ctx.Done():
-	// 	return nil, ctx.Err()
-	// }
+	select {
+	case user := <-result:
+		return user, nil
+	case err := <-errorchan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 	return nil, nil
 }
 
@@ -486,55 +516,59 @@ func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info 
 }
 
 func (userRepo *userRepository) getUserId(ctx context.Context) (uint64, error) {
-	// i don't know why i need this result channel...should be able to get
-	// the response of the get call from the txn response...
-	result := make(chan uint64, 1)
+	// I don't know why the Txn Response is empty... I would prefer to read the value
+	// from the transaction response rather than directly updating redId
 	var err error
+	var retId uint64
 	getId := func(stm concurrency.STM) error {
 		// what happens if get fails? It just never returns, so how do I account for that?
 		resp := stm.Get(userIdGenKey)
 
 		// if resp = "", we need to initialize first
-		if resp == "" {
-			resp = "1"
-		}
+		// if resp == "" {
+		// 	resp = "1"
+		// }
 
 		id, err := strconv.ParseUint(resp, 10, 64)
 		if err != nil {
-			result <- uint64(0)
 			return err
 		}
-		result <- id
+		retId = id
 		stm.Put(userIdGenKey, strconv.FormatUint(id+1, 10))
 		return nil
 	}
 	_, err = concurrency.NewSTM(userRepo.storage, getId)
-	if err != nil {
-		return 0, err
-	}
-	return <-result, nil
+	return retId, err
 
-	// select {
-	// case ret := <-result:
-	// 	if ret == uint64(0) {
-	// 		err = errors.New("could not get user id")
-	// 	}
-	// 	return ret, err
-	// case <-ctx.Done():
-	// 	return uint64(0), ctx.Err()
-	// }
 }
 
-func findRange(array []uint64) ([2]uint64, error) {
-	ret := [2]uint64{1, 1}
-	for i := 0; i < len(array); i++ {
-		if ret[0] > array[i] {
-			ret[0] = array[i]
-		}
-		if ret[1] < array[i] {
-			ret[1] = array[i]
-		}
+func convertToStrings(arr []uint64) ([]string, error) {
+	retArr := make([]string, len(arr))
+	for i, v := range arr {
+		retArr[i] = strconv.FormatUint(v, 10)
 	}
+	return retArr, nil
+}
+
+func findRange(array []uint64) ([2]string, error) {
+	// ret := [2]uint64{math.MaxUint64, 0}
+	// for i := 0; i < len(array); i++ {
+	// 	if ret[0] > array[i] {
+	// 		ret[0] = array[i]
+	// 	}
+	// 	if ret[1] < array[i] {
+	// 		ret[1] = array[i]
+	// 	}
+	// }
+	// return ret, nil
+	var ret [2]string
+	arr, err := convertToStrings(array)
+	if err != nil {
+		return ret, err
+	}
+	sort.Strings(arr)
+	ret[0] = arr[0]
+	ret[1] = arr[len(arr)-1]
 	return ret, nil
 }
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/config"
 	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post"
-	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/memstorage"
 	pb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
+	"github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/storage/etcd"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
@@ -17,8 +17,9 @@ func main() {
 	// Read Config
 	runtimeViper := viper.New()
 	config.NewRuntimeConfig(runtimeViper, ".")
-	postRepo := memstorage.GetPostRepository()
-
+	postStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
+	defer postStorage.Close()
+	postRepo := etcd.NewPostRepository(postStorage)
 	// Start server
 	lis, err := net.Listen("tcp", "localhost:"+runtimeViper.GetStringSlice("postservice.ports")[0])
 	if err != nil {

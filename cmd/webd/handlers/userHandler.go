@@ -30,12 +30,12 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		reqMessage := handlermodels.GetUserRequest{}
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			APIResponse(w, r, http.StatusBadRequest, "Post not added", make(map[string]string))
+			APIResponse(w, r, http.StatusBadRequest, "Could not read request", make(map[string]string))
 			return
 		}
 		err = json.Unmarshal(b, &reqMessage)
 		if err != nil {
-			APIResponse(w, r, http.StatusBadRequest, "Post not added", make(map[string]string))
+			APIResponse(w, r, http.StatusBadRequest, "Could not read request", make(map[string]string))
 			return
 		}
 		//u := application.GetUser(reqMessage.UserID)

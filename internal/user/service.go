@@ -13,7 +13,7 @@ type userServiceServer struct {
 }
 
 func (s *userServiceServer) CreateUser(ctx context.Context, info *pb.AccountInformation) (*pb.UserId, error) {
-	// Check whether user already exists
+	//Check whether user already exists
 	userObj, _ := s.userRepo.GetUserByUsername(ctx, info.Email)
 	if userObj != nil {
 		return &pb.UserId{}, errors.New("duplicate email")
