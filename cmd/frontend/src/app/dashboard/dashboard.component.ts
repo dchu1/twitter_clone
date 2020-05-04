@@ -88,6 +88,7 @@ export class DashboardComponent implements OnInit {
     }
     this.apiService.postData("post", body).subscribe((response: any) => {
       console.log("[Response]:: ", response);
+      this.getNewsFeed()
       this.router.navigate(['./home']);
       this.newTweet = ""
     },
