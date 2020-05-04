@@ -1,4 +1,4 @@
-package memstorage
+package storage
 
 import (
 	"context"
@@ -15,25 +15,25 @@ type testUserRepository struct {
 	sleeptime time.Duration
 }
 
-const sleeptime = "10s"
+const sleeptime = "2s"
 
-// GetUserRepository returns a UserRepository that uses package level storage
-func GetTestUserRepository() user.UserRepository {
-	ur := GetUserRepository()
-	st, _ := time.ParseDuration(sleeptime)
-	return &testUserRepository{ur, st}
-}
+// // GetUserRepository returns a UserRepository that uses package level storage
+// func GetTestUserRepository() user.UserRepository {
+// 	ur := GetUserRepository()
+// 	st, _ := time.ParseDuration(sleeptime)
+// 	return &testUserRepository{ur, st}
+// }
 
-// NewUserRepository reutnrs a UserRepository that uses the given storage
+// NewTestUserRepository reutnrs a UserRepository that uses the given storage
 func NewTestUserRepository(ur user.UserRepository) user.UserRepository {
 	st, _ := time.ParseDuration(sleeptime)
 	return &testUserRepository{ur, st}
 }
 
 // CreateUser adds a user to the appropriate data structures
-func (testRepo *testUserRepository) CreateUser(ctx context.Context, info *userpb.AccountInformation) (uint64, error) {
+func (testRepo *testUserRepository) CreateUser(ctx context.Context, user *userpb.User) (uint64, error) {
 	time.Sleep(testRepo.sleeptime)
-	return testRepo.userRepo.CreateUser(ctx, info)
+	return testRepo.userRepo.CreateUser(ctx, user)
 }
 
 // GetUser creates a copy of the specified user.
@@ -94,4 +94,8 @@ func (testRepo *testUserRepository) DeleteUser(ctx context.Context, userID uint6
 func (testRepo *testUserRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
 	time.Sleep(testRepo.sleeptime)
 	return errors.New("Feature not implemented")
+}
+
+func (testRepo *testUserRepository) NextUserId() (uint64, error) {
+	return testRepo.userRepo.NextUserId()
 }

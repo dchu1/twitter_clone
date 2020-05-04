@@ -24,23 +24,20 @@ func NewUserRepository(storage *userStorage) user.UserRepository {
 }
 
 // CreateUser adds a user to the appropriate data structures
-func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.AccountInformation) (uint64, error) {
+func (userRepo *userRepository) CreateUser(ctx context.Context, user *userpb.User) (uint64, error) {
 	result := make(chan uint64, 1)
 	errorchan := make(chan error, 1)
 
 	go func() {
 
-		info.UserId = userRepo.storage.generateUserId()
+		//user.AccountInformation.UserId = userRepo.storage.generateUserId()
 		newUserEntry := new(userEntry)
-		newUserEntry.user = new(pb.User)
-		newUserEntry.user.AccountInformation = info
-		newUserEntry.user.Followers = make(map[uint64]uint64)
-		newUserEntry.user.Following = make(map[uint64]uint64)
+		newUserEntry.user = user
 
 		userRepo.storage.usersRWMu.Lock()
-		userRepo.storage.users[info.UserId] = newUserEntry
+		userRepo.storage.users[user.AccountInformation.UserId] = newUserEntry
 		userRepo.storage.usersRWMu.Unlock()
-		result <- info.UserId
+		result <- user.AccountInformation.UserId
 
 	}()
 
@@ -408,4 +405,8 @@ func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) e
 }
 func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
 	return errors.New("Feature not implemented")
+}
+
+func (userRepo *userRepository) NextUserId() (uint64, error) {
+	return userRepo.storage.generateUserId()
 }

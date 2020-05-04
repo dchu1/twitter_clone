@@ -30,7 +30,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		_, err = PostServiceClient.CreatePost(r.Context(), &postpb.Post{UserId: user.UserId, Message: reqMessage.Message})
 
 		if err != nil {
-			APIResponse(w, r, http.StatusInternalServerError, "Post not added", make(map[string]string))
+			APIResponse(w, r, http.StatusInternalServerError, "Post not added:"+err.Error(), make(map[string]string))
 			return
 		}
 		APIResponse(w, r, http.StatusOK, "Post added successfully", make(map[string]string))

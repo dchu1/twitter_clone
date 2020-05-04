@@ -8,7 +8,7 @@ import (
 
 // UserRepository is the interface for user repositories
 type UserRepository interface {
-	CreateUser(context.Context, *pb.AccountInformation) (uint64, error)
+	CreateUser(context.Context, *pb.User) (uint64, error)
 	GetUser(context.Context, uint64) (*pb.User, error)
 	GetUsers(context.Context, []uint64) ([]*pb.User, error)
 	GetAllUsers(context.Context) ([]*pb.User, error)
@@ -19,4 +19,5 @@ type UserRepository interface {
 	FollowUser(context.Context, uint64, uint64) error
 	UnFollowUser(context.Context, uint64, uint64) error
 	DeleteUser(context.Context, uint64) error
+	NextUserId() (uint64, error)
 }

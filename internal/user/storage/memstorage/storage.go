@@ -33,12 +33,12 @@ func init() {
 }
 
 // generateUserId gets a value from the userId counter, then increments the counter
-func (storage *userStorage) generateUserId() uint64 {
+func (storage *userStorage) generateUserId() (uint64, error) {
 	storage.userIDMu.Lock()
 	defer storage.userIDMu.Unlock()
 	uid := storage.userID
 	storage.userID++
-	return uid
+	return uid, nil
 }
 
 // getUserEntry is a function for getting a UserEntry object (not a clone)

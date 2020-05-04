@@ -18,6 +18,7 @@ import (
 
 const userPrefix string = "/User/"
 const followingPrefix string = "/Following"
+const emailPrefix string = "/Email"
 const accountInfoPrefix string = "/AccountInfo"
 const userIdGenKey string = "/NextUserId"
 
@@ -30,13 +31,13 @@ func GetUserRepository() user.UserRepository {
 	return &userRepository{Client}
 }
 
-// NewUserRepository reutnrs a UserRepository that uses the given storage
+// NewUserRepository retunrs a UserRepository that uses the given storage
 func NewUserRepository(storage *clientv3.Client) user.UserRepository {
 	return &userRepository{storage}
 }
 
 // CreateUser adds a user to the appropriate data structures
-func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.AccountInformation) (uint64, error) {
+func (userRepo *userRepository) CreateUser(ctx context.Context, user *userpb.User) (uint64, error) {
 	result := make(chan uint64, 1)
 	errorchan := make(chan error, 1)
 
@@ -72,29 +73,24 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, info *userpb.Acc
 	// }()
 
 	go func() {
-		user := new(pb.User)
-		userId, err := userRepo.getUserId(ctx)
-		info.UserId = userId
-		if err != nil {
-			errorchan <- err
-			return
-		}
-		user.AccountInformation = info
-		user.Followers = make(map[uint64]uint64)
-		user.Following = make(map[uint64]uint64)
+		// userId, err := userRepo.getUserId(ctx)
+		// if err != nil {
+		// 	errorchan <- err
+		// 	return
+		// }
+		// user.AccountInformation.UserId = userId
 
 		userEncoded, err := encodeUser(user)
 		if err != nil {
 			errorchan <- err
 			return
 		}
-		fmt.Printf("Putting: %s\n", userPrefix+strconv.FormatUint(info.UserId, 10))
-		_, err = userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), userEncoded)
+		_, err = userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(user.AccountInformation.UserId, 10), userEncoded)
 		if err != nil {
 			errorchan <- err
 			return
 		}
-		result <- info.UserId
+		result <- user.AccountInformation.UserId
 	}()
 
 	select {
@@ -163,7 +159,7 @@ func (userRepo *userRepository) GetUsers(ctx context.Context, userIDs []uint64) 
 			errorchan <- err
 			return
 		}
-		resp, err := userRepo.storage.Get(ctx, userPrefix+extent[0], clientv3.WithRange(userPrefix+extent[1]))
+		resp, err := userRepo.storage.Get(ctx, userPrefix+extent[0], clientv3.WithRange(userPrefix+extent[1]+"\x00"))
 		cp := make([]*pb.User, 0, len(userIDs))
 		userIdLookup := make(map[uint64]struct{})
 		for _, v := range userIDs {
@@ -236,6 +232,12 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint6
 			followedK := userPrefix + strconv.FormatUint(followedId, 10)
 			followerV, followedV := stm.Get(followerK), stm.Get(followedK)
 
+			if followerV == "" {
+				return fmt.Errorf("following user %d not found", followerId)
+			}
+			if followedK == "" {
+				return fmt.Errorf("followed user %d not found", followedId)
+			}
 			// Decode
 			follower, err := decodeUser([]byte(followerV))
 			if err != nil {
@@ -285,7 +287,6 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint6
 		}()
 		return ctx.Err()
 	}
-	return nil
 }
 
 // UnFollowUser updates the following user's following map, and the followed user's followers map
@@ -350,7 +351,6 @@ func (userRepo *userRepository) UnFollowUser(ctx context.Context, followerId uin
 		}()
 		return ctx.Err()
 	}
-	return nil
 }
 
 // GetUserByUsername returns a user object by their username
@@ -388,7 +388,6 @@ func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email str
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	return nil, nil
 }
 
 // GetFollowing returns an array of users that the given user is following
@@ -400,6 +399,10 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 		user, err := userRepo.GetUser(ctx, userId)
 		if err != nil {
 			errorchan <- err
+			return
+		}
+		if len(user.Following) == 0 {
+			result <- make([]*pb.User, 0)
 			return
 		}
 		userIdArr := make([]uint64, 0, len(user.Following))
@@ -422,7 +425,6 @@ func (userRepo *userRepository) GetFollowing(ctx context.Context, userId uint64)
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	return nil, nil
 }
 
 // GetNotFollowing returns an array of users that the given user is not following
@@ -464,58 +466,66 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	return nil, nil
 }
 
 // DeleteUser removes a user
 func (userRepo *userRepository) DeleteUser(ctx context.Context, userID uint64) error {
-	// result := make(chan error, 1)
-	// buffer := make(chan *userpb.User, 1)
+	result := make(chan error, 1)
+	buffer := make(chan *userpb.User, 1)
 
-	// go func() {
-	// 	resp, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(userID, 10))
-	// 	if err != nil {
-	// 		result <- err
-	// 		return
-	// 	}
-	// 	_, err = userRepo.storage.Delete(ctx, userPrefix+strconv.FormatUint(userID, 10))
-	// 	if err != nil {
-	// 		result <- err
-	// 		return
-	// 	}
-	// 	buffer <- resp.Kvs[0].Value
-	// 	result <- nil
-	// }()
+	go func() {
+		// Fetch the user to buffer it
+		resp, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(userID, 10))
+		if err != nil {
+			result <- err
+			return
+		}
 
-	// select {
-	// case ret := <-result:
-	// 	return ret
-	// case <-ctx.Done():
-	// 	// if ctx done, need to continue to listen to know whether to add userEntry back into db
-	// 	go func() {
-	// 		select {
-	// 		case userEntry := <-buffer:
-	// 			userRepo.storage.usersRWMu.Lock()
-	// 			defer userRepo.storage.usersRWMu.Unlock()
-	// 			userRepo.storage.users[userID] = userEntry
-	// 			return
-	// 		case <-result:
-	// 			// if result != nil, an error occurred and so don't need to add back into db
-	// 			if result != nil {
-	// 				return
-	// 			}
-	// 		}
+		// Check to make sure user exists. Not sure that this code works properly...
+		if resp.Kvs[0].Value[0] == 0 {
+			result <- errors.New("user not found")
+			return
+		}
 
-	// 	}()
-	// 	return ctx.Err()
-	// }
-	return nil
+		// Delete the user
+		_, err = userRepo.storage.Delete(ctx, userPrefix+strconv.FormatUint(userID, 10))
+		if err != nil {
+			result <- err
+			return
+		}
+		user, err := decodeUser(resp.Kvs[0].Value)
+		if err != nil {
+			result <- err
+		}
+		buffer <- user
+		result <- nil
+	}()
+
+	select {
+	case ret := <-result:
+		return ret
+	case <-ctx.Done():
+		// if ctx done, need to continue to listen to know whether to add userEntry back into db
+		go func() {
+			select {
+			case user := <-buffer:
+				userRepo.CreateUser(context.Background(), user)
+				return
+			case <-result:
+				// if result != nil, an error occurred and so don't need to add back into db
+				if result != nil {
+					return
+				}
+			}
+		}()
+		return ctx.Err()
+	}
 }
 func (userRepo *userRepository) UpdateUserAccountInfo(ctx context.Context, info *userpb.AccountInformation) error {
 	return errors.New("Feature not implemented")
 }
 
-func (userRepo *userRepository) getUserId(ctx context.Context) (uint64, error) {
+func (userRepo *userRepository) NextUserId() (uint64, error) {
 	// I don't know why the Txn Response is empty... I would prefer to read the value
 	// from the transaction response rather than directly updating redId
 	var err error
@@ -524,9 +534,9 @@ func (userRepo *userRepository) getUserId(ctx context.Context) (uint64, error) {
 		// what happens if get fails? It just never returns, so how do I account for that?
 		resp := stm.Get(userIdGenKey)
 		// if resp = "", we need to initialize first
-		// if resp == "" {
-		// 	resp = "1"
-		// }
+		if resp == "" {
+			resp = "1"
+		}
 		id, err := strconv.ParseUint(resp, 10, 64)
 		if err != nil {
 			return err

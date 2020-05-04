@@ -14,6 +14,8 @@ contexttimeout = "10s" # timeout for contexts
 
 [userservice]
 ports = ["50053"]
+storage = "etcd" #either "etcd" or "memory"
+etcdcluster = ["http://localhost:2379"] #["http://localhost:2379", "http://localhost:22379", "http://localhost:32379"]
 
 [postservice]
 ports = ["50052"]
@@ -23,7 +25,6 @@ ports = ["50051"]
 
 [storage]
 storage = ["etcd"]
-
 `)
 
 // NewConfig reads a config into the package level viper instance
