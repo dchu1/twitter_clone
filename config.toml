@@ -17,3 +17,6 @@ etcd = ["http://localhost:2379", "http://localhost:22379", "http://localhost:323
 ports = ["50051"]
 storage = "etcd" #either "etcd" or "memory"
 etcd = ["http://localhost:2379", "http://localhost:22379", "http://localhost:32379"] #only used if storage = "etcd"
+
+[storage]
+storage = ["etcd"]

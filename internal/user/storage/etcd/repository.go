@@ -523,12 +523,10 @@ func (userRepo *userRepository) getUserId(ctx context.Context) (uint64, error) {
 	getId := func(stm concurrency.STM) error {
 		// what happens if get fails? It just never returns, so how do I account for that?
 		resp := stm.Get(userIdGenKey)
-
 		// if resp = "", we need to initialize first
 		// if resp == "" {
 		// 	resp = "1"
 		// }
-
 		id, err := strconv.ParseUint(resp, 10, 64)
 		if err != nil {
 			return err

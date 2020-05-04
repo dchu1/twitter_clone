@@ -24,8 +24,8 @@ type postRepository struct {
 }
 
 // GetPostRepository returns a UserRepository that uses package level storage
-func GetPostRepository() post.PostRepository {
-	return &postRepository{Client}
+func GetPostRepository(client *clientv3.Client) post.PostRepository {
+	return &postRepository{client}
 }
 
 // NewPostRepository reutnrs a UserRepository that uses the given storage
@@ -80,31 +80,25 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 
 func (postRepo *postRepository) getPostId(ctx context.Context) (uint64, error) {
 
-	result := make(chan uint64, 1)
 	var err error
+	var retId uint64
 	getId := func(stm concurrency.STM) error {
 		// what happens if get fails? It just never returns, so how do I account for that?
 		resp := stm.Get(postIdGenKey)
-
 		// if resp = "", we need to initialize first
 		if resp == "" {
 			resp = "1"
 		}
-
 		id, err := strconv.ParseUint(resp, 10, 64)
 		if err != nil {
-			result <- uint64(0)
 			return err
 		}
-		result <- id
+		retId = id
 		stm.Put(postIdGenKey, strconv.FormatUint(id+1, 10))
 		return nil
 	}
 	_, err = concurrency.NewSTM(postRepo.storage, getId)
-	if err != nil {
-		return 0, err
-	}
-	return <-result, nil
+	return retId, err
 }
 
 // GetPosts retrieves an array of post from the post map
