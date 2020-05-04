@@ -42,10 +42,9 @@ func TestCreatePostEtcd(t *testing.T) {
 		t.Error("Post UserId not set properly")
 	}
 }
-
 func TestConcurrentCreatePostEtcd(t *testing.T) {
 	var wg sync.WaitGroup
-	numPosts := 10
+	numPosts := 100
 	wg.Add(numPosts)
 
 	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
@@ -54,6 +53,7 @@ func TestConcurrentCreatePostEtcd(t *testing.T) {
 	postApp := post.GetPostServiceServer(&postRepo)
 
 	userStorage, _ := useretcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
+	defer userStorage.Close()
 	userRepo := useretcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
 
@@ -75,7 +75,7 @@ func TestConcurrentCreatePostEtcd(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(post.Posts) != 10 {
+	if len(post.Posts) != 100 {
 		t.Error("Not all posts added")
 	}
 }
@@ -108,8 +108,9 @@ func TestContextCreatePostEtcd(t *testing.T) {
 func TestContextTimeoutCreatePostEtcd(t *testing.T) {
 	// Create a new context, with its cancellation function
 	// from the original context
-	ctx, cancel := context.WithCancel(context.Background())
-	//cancel()
+	duration := 15 * time.Millisecond
+	ctx, _ := context.WithTimeout(context.Background(), duration)
+
 	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer postStorage.Close()
 	postRepo := postetcd.NewPostRepository(postStorage)
@@ -124,16 +125,17 @@ func TestContextTimeoutCreatePostEtcd(t *testing.T) {
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	user, _ := userApp.CreateUser(context.Background(), &userInfo)
 	postInfo := postpb.Post{Message: "testMessage", UserId: user.UserId}
-	go postApp.CreatePost(ctx, &postInfo)
-	time.Sleep(time.Second * 1)
-	cancel()
-	time.Sleep(time.Second * 10)
+	postID1, posterr := postApp.CreatePost(ctx, &postInfo)
+
 	ctx = context.Background()
 	_, err := postApp.GetPost(ctx, &postpb.PostID{PostID: uint64(1)})
 	if err == nil {
+		t.Error(postID1)
+		t.Error(posterr)
 		t.Error("post still exists")
 	}
 }
+
 func TestGetPostEtcd(t *testing.T) {
 	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer postStorage.Close()
@@ -207,18 +209,19 @@ func TestConcurrentGetPostEtcd(t *testing.T) {
 
 	for _, post := range postList {
 
-		if post.UserId != 1 {
+		if post.UserId != user.UserId {
 			t.Error("UserID not set properly in the post")
 		}
 		if post.Message != "testMessage1" {
 			t.Error("Message not set properly in the post")
 		}
-		if post.PostID != 1 {
+		if post.PostID != postID1.PostID {
 			t.Error("PostID not set properly in the post")
 		}
 
 	}
 }
+
 func TestContextGetPostEtcd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -244,6 +247,7 @@ func TestContextGetPostEtcd(t *testing.T) {
 		t.Error("Context error not thrown")
 	}
 }
+
 func TestContextTimeoutGetPostEtcd(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
@@ -272,6 +276,7 @@ func TestContextTimeoutGetPostEtcd(t *testing.T) {
 		t.Error("Context error not thrown")
 	}
 }
+
 func TestGetPostsEtcd(t *testing.T) {
 	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer postStorage.Close()
@@ -352,13 +357,13 @@ func TestConcurrentGetPostsEtcd(t *testing.T) {
 	}
 	for _, post := range postList {
 
-		if post.Posts[0].UserId != 1 {
+		if post.Posts[0].UserId != user.UserId {
 			t.Error("UserID not set properly in the post")
 		}
 		if post.Posts[0].Message != "testMessage1" {
 			t.Error("Message not set properly in the post")
 		}
-		if post.Posts[0].PostID != 1 {
+		if post.Posts[0].PostID != postID1.PostID {
 			t.Error("PostID not set properly in the post")
 		}
 
@@ -423,6 +428,7 @@ func TestContextTimeoutGetPostsEtcd(t *testing.T) {
 		t.Error("Context cancelled still error not thrown")
 	}
 }
+
 func TestGetPostsByAuthorEtcd(t *testing.T) {
 	postStorage, _ := postetcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer postStorage.Close()
@@ -465,6 +471,7 @@ func TestGetPostsByAuthorEtcd(t *testing.T) {
 		t.Error("userID not propert for post 1")
 	}
 }
+
 func TestConcurrentGetPostsByAuthorEtcd(t *testing.T) {
 	var wg sync.WaitGroup
 	numPosts := 100
@@ -485,7 +492,7 @@ func TestConcurrentGetPostsByAuthorEtcd(t *testing.T) {
 	userInfo := userpb.AccountInformation{FirstName: "test1", LastName: "test2", Email: "test@nyu.edu"}
 	user, _ := userApp.CreateUser(context.Background(), &userInfo)
 	postInfo1 := postpb.Post{Message: "testMessage1", UserId: user.UserId}
-	postApp.CreatePost(context.Background(), &postInfo1)
+	post1, _ := postApp.CreatePost(context.Background(), &postInfo1)
 	userArray := []uint64{user.UserId}
 	userIDs := postpb.UserIDs{UserIDs: userArray}
 
@@ -504,18 +511,19 @@ func TestConcurrentGetPostsByAuthorEtcd(t *testing.T) {
 	}
 	for _, post := range postList {
 
-		if post.Posts[0].UserId != 1 {
+		if post.Posts[0].UserId != user.UserId {
 			t.Error("UserID not set properly in the post")
 		}
 		if post.Posts[0].Message != "testMessage1" {
 			t.Error("Message not set properly in the post")
 		}
-		if post.Posts[0].PostID != 1 {
+		if post.Posts[0].PostID != post1.PostID {
 			t.Error("PostID not set properly in the post")
 		}
 
 	}
 }
+
 func TestContextGetPostsByAuthorEtcd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -545,6 +553,7 @@ func TestContextGetPostsByAuthorEtcd(t *testing.T) {
 		t.Error("Context cancelled but the error is not thrown")
 	}
 }
+
 func TestContextTimeoutGetPostsByAuthorEtcd(t *testing.T) {
 	duration := 15 * time.Millisecond
 	ctx, _ := context.WithTimeout(context.Background(), duration)
