@@ -17,10 +17,13 @@ import (
 func Login(w http.ResponseWriter, r *http.Request) {
 	var user handlermodels.LoginRequest
 	body, err := ioutil.ReadAll(r.Body)
-
-	json.Unmarshal([]byte(body), &user)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		APIResponse(w, r, http.StatusInternalServerError, "Error in reading request", make(map[string]string)) // send data to client side
+		return
+	}
+	err = json.Unmarshal([]byte(body), &user)
+	if err != nil {
+		APIResponse(w, r, http.StatusUnauthorized, "Error in unmarshalling request", make(map[string]string)) // send data to client side
 		return
 	}
 	//code to check if user exists
