@@ -119,7 +119,7 @@ func TestContextTimeoutCreatePost(t *testing.T) {
 	time.Sleep(time.Second * 10)
 	ctx = context.Background()
 	_, err := postApp.GetPost(ctx, &postpb.PostID{PostID: uint64(1)})
-	if err == nil {
+	if err == nil || err.Error() != "post not found" {
 		t.Error("post still exists")
 	}
 }

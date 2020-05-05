@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"log"
+	"sort"
 	"strconv"
 	"time"
 
@@ -68,10 +69,10 @@ func (postRepo *postRepository) CreatePost(ctx context.Context, p *pb.Post) (uin
 	case <-ctx.Done():
 		go func() {
 			select {
-			case <-result:
-				// fmt.Print("vrevervev")
-				// fmt.Print(postvalue)
-				postRepo.DeletePost(context.Background(), p.PostID)
+			case postID := <-result:
+				// if ctx.Done(), we need to make sure that if the post has or will be created, it is deleted,
+				// so start a new go routine to monitor the result and error channels
+				postRepo.DeletePost(context.Background(), postID)
 				return
 			case <-errorchan:
 				return
@@ -117,6 +118,10 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 			errorchan <- err
 			return
 		}
+		if resp.Kvs == nil {
+			errorchan <- errors.New("post not found")
+			return
+		}
 		dec := gob.NewDecoder(bytes.NewReader(resp.Kvs[0].Value))
 		if err := dec.Decode(&post); err != nil {
 			errorchan <- errors.New("Could not decode message")
@@ -146,7 +151,7 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 			errorchan <- err
 			return
 		}
-		resp, err := postRepo.storage.Get(ctx, postPrefix+strconv.FormatUint(extent[0], 10), clientv3.WithRange(postPrefix+strconv.FormatUint(extent[1]+1, 10)))
+		resp, err := postRepo.storage.Get(ctx, postPrefix+extent[0], clientv3.WithRange(postPrefix+extent[1]+"\x00"))
 		if err != nil {
 			errorchan <- err
 			return
@@ -173,16 +178,23 @@ func (postRepo *postRepository) GetPosts(ctx context.Context, postIDs []uint64) 
 	}
 }
 
-func findRange(array []uint64) ([2]uint64, error) {
-	ret := [2]uint64{1, 1}
-	for i := 0; i < len(array); i++ {
-		if ret[0] > array[i] {
-			ret[0] = array[i]
-		}
-		if ret[1] < array[i] {
-			ret[1] = array[i]
-		}
+func convertToStrings(arr []uint64) ([]string, error) {
+	retArr := make([]string, len(arr))
+	for i, v := range arr {
+		retArr[i] = strconv.FormatUint(v, 10)
 	}
+	return retArr, nil
+}
+
+func findRange(array []uint64) ([2]string, error) {
+	var ret [2]string
+	arr, err := convertToStrings(array)
+	if err != nil {
+		return ret, err
+	}
+	sort.Strings(arr)
+	ret[0] = arr[0]
+	ret[1] = arr[len(arr)-1]
 	return ret, nil
 }
 
@@ -196,17 +208,30 @@ func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) e
 
 	go func() {
 
-		postEntry, err := postRepo.GetPost(ctx, postID)
+		// Fetch the user to buffer it
+		resp, err := postRepo.storage.Get(ctx, postPrefix+strconv.FormatUint(postID, 10))
 		if err != nil {
-			errorchan <- errors.New("post not exist")
+			errorchan <- err
 			return
 		}
+		if resp.Kvs[0].Value[0] == 0 {
+			errorchan <- errors.New("user not found")
+			return
+		}
+
+		//Delete the post
 		_, err = postRepo.storage.Delete(ctx, postPrefix+strconv.FormatUint(postID, 10))
 		if err != nil {
 			errorchan <- err
-		} else {
-			buffer <- postEntry
+			return
 		}
+		var post pb.Post
+		dec := gob.NewDecoder(bytes.NewReader(resp.Kvs[0].Value))
+		if err := dec.Decode(&post); err != nil {
+			errorchan <- err
+			return
+		}
+		buffer <- &post
 
 	}()
 
@@ -217,24 +242,14 @@ func (postRepo *postRepository) DeletePost(ctx context.Context, postID uint64) e
 		// if ctx done, need to continue to listen to know whether to add postEntry back into db
 		go func() {
 			select {
-			case err := <-errorchan:
-				// if result != nil, an error occurred and so don't need to add back into db
-				if err != nil {
-					return
-				}
-				postEntry := <-buffer
-				var buf bytes.Buffer
-				if err := gob.NewEncoder(&buf).Encode(postEntry); err != nil {
-					errorchan <- err
-					return
-				}
-
-				_, err = postRepo.storage.Put(ctx, postPrefix+strconv.FormatUint(postEntry.PostID, 10), buf.String())
-				if err != nil {
-					errorchan <- err
-					return
-				}
+			case post := <-buffer:
+				postRepo.CreatePost(context.Background(), post)
 				return
+			case err := <-errorchan:
+				// if err != nil, an error occurred and so don't need to add back into db
+				if err != nil {
+					return
+				}
 			}
 
 		}()

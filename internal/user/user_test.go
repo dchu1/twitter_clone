@@ -18,7 +18,7 @@ import (
 
 func TestAddUserEtcd(t *testing.T) {
 	//userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -41,7 +41,7 @@ func TestAddUserEtcd(t *testing.T) {
 func TestGetUsersEtcd(t *testing.T) {
 	const numUsers = 10
 	//userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -78,7 +78,7 @@ func TestGetUsersEtcd(t *testing.T) {
 }
 
 func TestFollowUserEtcd(t *testing.T) {
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -100,7 +100,7 @@ func TestFollowUserEtcd(t *testing.T) {
 }
 
 func TestUnFollowUserEtcd(t *testing.T) {
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -136,7 +136,7 @@ func TestConcurrentAddUserEtcd(t *testing.T) {
 	var wg sync.WaitGroup
 	numUsers := 100
 	wg.Add(numUsers)
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -164,7 +164,7 @@ func TestConcurrentFollowEtcd(t *testing.T) {
 	var wg sync.WaitGroup
 	numUsers := 100
 	wg.Add(numUsers)
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()
 	userRepo := etcd.NewUserRepository(userStorage)
 	userApp := user.GetUserServiceServer(&userRepo)
@@ -221,7 +221,7 @@ func TestContextTimeoutAddUserEtcd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 
 	// Mock repository with 10 seconds delay for accessing database
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	userRepo := etcd.NewUserRepository(userStorage)
 	testUserRepo := storage.NewTestUserRepository(userRepo)
 	userApp := user.GetUserServiceServer(&testUserRepo)
@@ -242,7 +242,7 @@ func TestContextTimeoutFollowUserEtcd(t *testing.T) {
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
 	// Mock repository with 10 seconds delay for accessing database
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	userRepo := etcd.NewUserRepository(userStorage)
 	testUserRepo := storage.NewTestUserRepository(userRepo)
 	userApp := user.GetUserServiceServer(&testUserRepo)
@@ -279,7 +279,7 @@ func TestContextTimeoutUnFollowUserEtcd(t *testing.T) {
 	ctx, _ := context.WithTimeout(context.Background(), duration)
 
 	// Mock repository with 10 seconds delay for accessing database
-	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379"})
+	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	userRepo := etcd.NewUserRepository(userStorage)
 	testUserRepo := storage.NewTestUserRepository(userRepo)
 	userApp := user.GetUserServiceServer(&testUserRepo)
