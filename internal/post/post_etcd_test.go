@@ -174,6 +174,7 @@ func TestGetPostEtcd(t *testing.T) {
 		t.Error("Post UserId not set properly")
 	}
 }
+
 func TestConcurrentGetPostEtcd(t *testing.T) {
 	var wg sync.WaitGroup
 	numPosts := 100
