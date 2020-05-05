@@ -7,15 +7,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-var defaultConfig = []byte(`# filename: config.toml
+var defaultConfig = []byte(`
+# filename: config.toml
 [webserver]
 ports = ["9090"]
-contexttimeout = "10s" # timeout for contexts
+contexttimeout = "5s" # timeout for contexts
+
+[feedservice]
+ports = ["50055"]
+
+[signupservice]
+ports = ["50054"]
 
 [userservice]
 ports = ["50053"]
 storage = "etcd" #either "etcd" or "memory"
-etcdcluster = ["http://localhost:2379"] #["http://localhost:2379", "http://localhost:22379", "http://localhost:32379"]
+etcdcluster = ["http://localhost:2379", "http://localhost:22379", "http://localhost:32379"]
 
 [postservice]
 ports = ["50052"]
@@ -39,7 +46,7 @@ func NewConfig(filepath string) {
 			fmt.Println("Config file not found. Using defaults")
 			viper.ReadConfig(bytes.NewBuffer(defaultConfig))
 		} else {
-			panic(fmt.Errorf("Fatal error config file: %s \n", err))
+			panic(fmt.Errorf("Fatal error config file: %s", err))
 		}
 	}
 }
@@ -56,7 +63,7 @@ func NewRuntimeConfig(vip *viper.Viper, filepath string) {
 			fmt.Println("Config file not found. Using defaults")
 			vip.ReadConfig(bytes.NewBuffer(defaultConfig))
 		} else {
-			panic(fmt.Errorf("Fatal error config file: %s \n", err))
+			panic(fmt.Errorf("Fatal error config file: %s", err))
 		}
 	}
 }

@@ -12,6 +12,7 @@ service UserService{
     rpc GetFollowing(UserId) returns (UserList) {}
     rpc GetNotFollowing(UserId) returns (UserList) {}
     rpc GetUserIdByUsername(UserName) returns (UserId) {}
+    rpc DeleteUser(AccountInformation) returns (Void) {}
 }
 
 message Void{}

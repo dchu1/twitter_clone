@@ -8,15 +8,14 @@ package userpb
 
 import (
 	context "context"
-	reflect "reflect"
-	sync "sync"
-
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -73,8 +72,8 @@ type AccountInformation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FirstName string `protobuf:"bytes,1,opt,name=firstName,proto3" json:"firstname,omitempty"`
-	LastName  string `protobuf:"bytes,2,opt,name=lastName,proto3" json:"lastname,omitempty"`
+	FirstName string `protobuf:"bytes,1,opt,name=firstName,proto3" json:"firstName,omitempty"`
+	LastName  string `protobuf:"bytes,2,opt,name=lastName,proto3" json:"lastName,omitempty"`
 	Email     string `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	UserId    uint64 `protobuf:"varint,4,opt,name=userId,proto3" json:"userId,omitempty"`
 }
@@ -602,7 +601,7 @@ var file_user_proto_rawDesc = []byte{
 	0x61, 0x69, 0x6c, 0x22, 0x34, 0x0a, 0x08, 0x55, 0x73, 0x65, 0x72, 0x4c, 0x69, 0x73, 0x74, 0x12,
 	0x28, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x4c, 0x69, 0x73, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28,
 	0x0b, 0x32, 0x0c, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x52,
-	0x08, 0x75, 0x73, 0x65, 0x72, 0x4c, 0x69, 0x73, 0x74, 0x32, 0xea, 0x03, 0x0a, 0x0b, 0x55, 0x73,
+	0x08, 0x75, 0x73, 0x65, 0x72, 0x4c, 0x69, 0x73, 0x74, 0x32, 0xa4, 0x04, 0x0a, 0x0b, 0x55, 0x73,
 	0x65, 0x72, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x3a, 0x0a, 0x0a, 0x43, 0x72, 0x65,
 	0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x12, 0x1a, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62,
 	0x2e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
@@ -633,7 +632,11 @@ var file_user_proto_rawDesc = []byte{
 	0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x49, 0x64, 0x42, 0x79, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61,
 	0x6d, 0x65, 0x12, 0x10, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x55, 0x73, 0x65, 0x72,
 	0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x0e, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x55, 0x73,
-	0x65, 0x72, 0x49, 0x64, 0x22, 0x00, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x72, 0x49, 0x64, 0x22, 0x00, 0x12, 0x38, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x55, 0x73, 0x65, 0x72, 0x12, 0x1a, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x41, 0x63,
+	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x1a, 0x0c, 0x2e, 0x75, 0x73, 0x65, 0x72, 0x70, 0x62, 0x2e, 0x56, 0x6f, 0x69, 0x64, 0x22, 0x00,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -677,17 +680,19 @@ var file_user_proto_depIdxs = []int32{
 	6,  // 10: userpb.UserService.GetFollowing:input_type -> userpb.UserId
 	6,  // 11: userpb.UserService.GetNotFollowing:input_type -> userpb.UserId
 	8,  // 12: userpb.UserService.GetUserIdByUsername:input_type -> userpb.UserName
-	6,  // 13: userpb.UserService.CreateUser:output_type -> userpb.UserId
-	2,  // 14: userpb.UserService.GetUser:output_type -> userpb.User
-	9,  // 15: userpb.UserService.GetUsers:output_type -> userpb.UserList
-	9,  // 16: userpb.UserService.GetAllUsers:output_type -> userpb.UserList
-	0,  // 17: userpb.UserService.FollowUser:output_type -> userpb.Void
-	0,  // 18: userpb.UserService.UnFollowUser:output_type -> userpb.Void
-	9,  // 19: userpb.UserService.GetFollowing:output_type -> userpb.UserList
-	9,  // 20: userpb.UserService.GetNotFollowing:output_type -> userpb.UserList
-	6,  // 21: userpb.UserService.GetUserIdByUsername:output_type -> userpb.UserId
-	13, // [13:22] is the sub-list for method output_type
-	4,  // [4:13] is the sub-list for method input_type
+	1,  // 13: userpb.UserService.DeleteUser:input_type -> userpb.AccountInformation
+	6,  // 14: userpb.UserService.CreateUser:output_type -> userpb.UserId
+	2,  // 15: userpb.UserService.GetUser:output_type -> userpb.User
+	9,  // 16: userpb.UserService.GetUsers:output_type -> userpb.UserList
+	9,  // 17: userpb.UserService.GetAllUsers:output_type -> userpb.UserList
+	0,  // 18: userpb.UserService.FollowUser:output_type -> userpb.Void
+	0,  // 19: userpb.UserService.UnFollowUser:output_type -> userpb.Void
+	9,  // 20: userpb.UserService.GetFollowing:output_type -> userpb.UserList
+	9,  // 21: userpb.UserService.GetNotFollowing:output_type -> userpb.UserList
+	6,  // 22: userpb.UserService.GetUserIdByUsername:output_type -> userpb.UserId
+	0,  // 23: userpb.UserService.DeleteUser:output_type -> userpb.Void
+	14, // [14:24] is the sub-list for method output_type
+	4,  // [4:14] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -861,6 +866,7 @@ type UserServiceClient interface {
 	GetFollowing(ctx context.Context, in *UserId, opts ...grpc.CallOption) (*UserList, error)
 	GetNotFollowing(ctx context.Context, in *UserId, opts ...grpc.CallOption) (*UserList, error)
 	GetUserIdByUsername(ctx context.Context, in *UserName, opts ...grpc.CallOption) (*UserId, error)
+	DeleteUser(ctx context.Context, in *AccountInformation, opts ...grpc.CallOption) (*Void, error)
 }
 
 type userServiceClient struct {
@@ -952,6 +958,15 @@ func (c *userServiceClient) GetUserIdByUsername(ctx context.Context, in *UserNam
 	return out, nil
 }
 
+func (c *userServiceClient) DeleteUser(ctx context.Context, in *AccountInformation, opts ...grpc.CallOption) (*Void, error) {
+	out := new(Void)
+	err := c.cc.Invoke(ctx, "/userpb.UserService/DeleteUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 type UserServiceServer interface {
 	CreateUser(context.Context, *AccountInformation) (*UserId, error)
@@ -963,6 +978,7 @@ type UserServiceServer interface {
 	GetFollowing(context.Context, *UserId) (*UserList, error)
 	GetNotFollowing(context.Context, *UserId) (*UserList, error)
 	GetUserIdByUsername(context.Context, *UserName) (*UserId, error)
+	DeleteUser(context.Context, *AccountInformation) (*Void, error)
 }
 
 // UnimplementedUserServiceServer can be embedded to have forward compatible implementations.
@@ -995,6 +1011,9 @@ func (*UnimplementedUserServiceServer) GetNotFollowing(context.Context, *UserId)
 }
 func (*UnimplementedUserServiceServer) GetUserIdByUsername(context.Context, *UserName) (*UserId, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserIdByUsername not implemented")
+}
+func (*UnimplementedUserServiceServer) DeleteUser(context.Context, *AccountInformation) (*Void, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
 }
 
 func RegisterUserServiceServer(s *grpc.Server, srv UserServiceServer) {
@@ -1163,6 +1182,24 @@ func _UserService_GetUserIdByUsername_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountInformation)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/userpb.UserService/DeleteUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteUser(ctx, req.(*AccountInformation))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _UserService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "userpb.UserService",
 	HandlerType: (*UserServiceServer)(nil),
@@ -1202,6 +1239,10 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserIdByUsername",
 			Handler:    _UserService_GetUserIdByUsername_Handler,
+		},
+		{
+			MethodName: "DeleteUser",
+			Handler:    _UserService_DeleteUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

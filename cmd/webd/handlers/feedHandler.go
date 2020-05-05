@@ -6,8 +6,7 @@ import (
 
 	handlermodels "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/cmd/webd/handlers/models"
 	authpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/auth/authentication"
-	postpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/post/postpb"
-	userpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/user/userpb"
+	feedpb "github.com/Distributed-Systems-CSGY9223/yjs310-shs572-dfc296-final-project/internal/feed/feedpb"
 	"github.com/golang/protobuf/ptypes"
 )
 
@@ -18,42 +17,56 @@ func Feed(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		// get the user's feed
 		user := r.Context().Value("user").(*authpb.UserId)
-		// Get the user's obj
-		userObj, err := UserServiceClient.GetUser(r.Context(), &userpb.UserId{UserId: user.UserId})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Get the user's following list
-		followers, err := UserServiceClient.GetFollowing(r.Context(), &userpb.UserId{UserId: user.UserId})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Construct an array of userIds to get posts and a map to map userids to user objects
-		userMap := make(map[uint64]*userpb.User)
-		userMap[user.UserId] = userObj
-		tempArr := make([]uint64, 0, len(followers.GetUserList())+1)
-		tempArr = append(tempArr, user.UserId)
-		for _, v := range followers.GetUserList() {
-			tempArr = append(tempArr, v.AccountInformation.UserId)
-			userMap[v.AccountInformation.UserId] = v
-		}
+		// // Get the user's obj
+		// userObj, err := UserServiceClient.GetUser(r.Context(), &userpb.UserId{UserId: user.UserId})
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// // Get the user's following list
+		// followers, err := UserServiceClient.GetFollowing(r.Context(), &userpb.UserId{UserId: user.UserId})
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// // Construct an array of userIds to get posts and a map to map userids to user objects
+		// userMap := make(map[uint64]*userpb.User)
+		// userMap[user.UserId] = userObj
+		// tempArr := make([]uint64, 0, len(followers.GetUserList())+1)
+		// tempArr = append(tempArr, user.UserId)
+		// for _, v := range followers.GetUserList() {
+		// 	tempArr = append(tempArr, v.AccountInformation.UserId)
+		// 	userMap[v.AccountInformation.UserId] = v
+		// }
 
-		// Get posts
-		posts, err := PostServiceClient.GetPostsByAuthors(r.Context(), &postpb.UserIDs{UserIDs: tempArr})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		// // Get posts
+		// posts, err := PostServiceClient.GetPostsByAuthors(r.Context(), &postpb.UserIDs{UserIDs: tempArr})
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
 
-		//create a reply struct
-		respPostArray := make([]handlermodels.Post, len(posts.Posts))
-		for i, post := range posts.Posts {
+		// //create a reply struct
+		// respPostArray := make([]handlermodels.Post, len(posts.Posts))
+		// for i, post := range posts.Posts {
+		// 	// construct a post struct
+		// 	author := userMap[post.UserId].AccountInformation
+		// 	timestamp, _ := ptypes.Timestamp(post.Timestamp)
+		// 	authorStruct := handlermodels.Author{UserID: author.UserId, Firstname: author.FirstName, Lastname: author.LastName, Email: author.Email}
+		// 	postStruct := handlermodels.Post{Id: post.PostID, Timestamp: timestamp, Message: post.Message, Author: authorStruct}
+		// 	respPostArray[i] = postStruct
+		// }
+		//respMessage := handlermodels.FeedResponse{respPostArray}
+
+		resp, err := FeedServiceClient.GetFeed(r.Context(), &feedpb.UserId{UserId: user.UserId})
+
+		// unmarshal our object into our expected output. This is only needed because I need to change the timestamp format...
+		// There is definitely a more efficient way to do this
+		respPostArray := make([]handlermodels.Post, len(resp.Posts))
+		for i, post := range resp.Posts {
 			// construct a post struct
-			author := userMap[post.UserId].AccountInformation
 			timestamp, _ := ptypes.Timestamp(post.Timestamp)
-			authorStruct := handlermodels.Author{UserID: author.UserId, Firstname: author.FirstName, Lastname: author.LastName, Email: author.Email}
+			authorStruct := handlermodels.Author{UserID: post.Author.UserId, Firstname: post.Author.FirstName, Lastname: post.Author.LastName, Email: post.Author.Email}
 			postStruct := handlermodels.Post{Id: post.PostID, Timestamp: timestamp, Message: post.Message, Author: authorStruct}
 			respPostArray[i] = postStruct
 		}
