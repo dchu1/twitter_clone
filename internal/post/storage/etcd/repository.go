@@ -118,6 +118,10 @@ func (postRepo *postRepository) GetPost(ctx context.Context, postID uint64) (*pb
 			errorchan <- err
 			return
 		}
+		if resp.Kvs == nil {
+			errorchan <- errors.New("post not found")
+			return
+		}
 		dec := gob.NewDecoder(bytes.NewReader(resp.Kvs[0].Value))
 		if err := dec.Decode(&post); err != nil {
 			errorchan <- errors.New("Could not decode message")
