@@ -18,6 +18,10 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		token, _ := url.QueryUnescape(cookie.Value)
 		user, err := handlers.AuthClient.GetUserId(r.Context(), &authpb.AuthToken{Token: token})
+		if err != nil {
+			http.Error(w, "Authentication unsuccesful"+err.Error(), http.StatusUnauthorized)
+			return
+		}
 		ctx := context.WithValue(r.Context(), "user", user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
