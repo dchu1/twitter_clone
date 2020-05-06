@@ -177,7 +177,7 @@ func TestConcurrentAddUserEtcd(t *testing.T) {
 
 func TestConcurrentFollowEtcd(t *testing.T) {
 	var wg sync.WaitGroup
-	numUsers := 10
+	numUsers := 100
 	wg.Add(numUsers)
 	userStorage, _ := etcd.NewClient([]string{"http://localhost:2379", "http://localhost:22379", "http://localhost:32379"})
 	defer userStorage.Close()

@@ -1,4 +1,13 @@
 # Distributed Systems: Final Project
+# Team
+|Name|Net ID|
+|---|---|
+|David Chu|dfc296|
+|Smit Sheth|shs572|
+|Yash Shah|yjs310|
+
+# Architecture
+![Architecture Diagram](https://i.imgur.com/8PTZ8Q5.png)
 
 # Running the frontend
 ## Dependencies
@@ -27,6 +36,15 @@ The port can be changed in the config.toml file.
 Please note that if you want to use the config.toml file, you need to start services from the root folder (yjs310-shs572-dfc296-final-project/). This is because the services look in the current working directory
 for the config file. Otherwise they will use default values.
 
+# Running the etcd server
+1. Download the [latest etcd binaries](https://github.com/etcd-io/etcd/releases)
+2. Install [goreman](https://github.com/mattn/goreman)
+
+    ```go get github.com/mattn/goreman```
+3. In the etcd directory, use goreman to start the etcd cluster. Goreman will read the Procfile. *Note that to run on windows, you need to remove the single quotes (' ') around the cluster definition.
+
+    ```goreman start```
+
 # Project Structure
 Project structure is based on [package oriented design](https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html) 
 ```
@@ -34,58 +52,93 @@ yjs310-shs572-dfc296-final-project
 │   config.toml     # config file for all services
 │   runServers.bat  # batch file to start services
 │   
-├───cmd             # Holds files for starting the services
+├───cmd
 │   ├───authd
-│   │       main.go # Main file for auth service server
+│   │       main.go         # start authd server
 │   │       
+│   ├───frontend\           # start frontend
 │   ├───postd
-│   │       main.go # Main file for post service server
+│   │       main.go         # start postd
 │   │       
 │   ├───userd
-│   │       main.go # Main file for user service server
+│   │       main.go         # start userd
 │   │       
 │   └───webd
-│       │   main.go # Main file for web server
+│       │   main.go         # start backend web server
 │       │   
-│       └───handlers # web server handlers
+│       └───handlers\       # backend web server handlers
+│           │   
+│           ├───middleware\ # middleware
+│           │       
+│           └───models\     # request/response models
 │                   
-└───internal # Application logic
-    ├───auth
-    │   ├───authentication      # authentication protobuf files
-    │   │       auth.pb.go
-    │   │       auth.proto
-    │   │       
-    │   ├───servic              # authentication service
-    │   │       auth_service.go
-    │   │       
-    │   └───storage             # storage for authentication service
-    │           memory.go
-    │           
-    ├───config                  # config loading
-    │       config.go
-    │       
-    ├───post                    
-    │   │   models.go
-    │   │   service.go          # post service 
-    │   │   
-    │   ├───memstorage          # storage for post service
-    │   │       repository.go
-    │   │       storage.go
-    │   │       
-    │   └───postpb              # protobuf files for post service
-    │           post.pb.go
-    │           post.proto
-    │           
-    └───user                    # user service
-        │   models.go            
-        │   service.go
-        │   user_test.go
-        │   
-        ├───memstorage          # storage for user service
-        │       repository.go
-        │       storage.go
-        │       
-        └───userpb              # protobuf files for user service
-                user.pb.go
-                user.proto
+├───internal                    # Application logic
+│   ├───auth                    # Authentication service
+│   │   │   auth_etcd_test.go
+│   │   │   auth_test.go
+│   │   │   models.go           # Repo Interface definition
+│   │   │   
+│   │   ├───authentication      # Protobuf files
+│   │   │       auth.pb.go
+│   │   │       auth.proto
+│   │   │       
+│   │   ├───service
+│   │   │       auth_service.go # Service Implementation
+│   │   │       
+│   │   └───storage             # Repo Implementations
+│   │       ├───etcd
+│   │       │       client.go
+│   │       │       repository.go
+│   │       │       testrepository.go
+│   │       │       
+│   │       └───memstorage
+│   │               memory.go
+│   │               repository.go
+│   │               testrepository.go
+│   │               
+│   ├───config                  # Config parsing
+│   │       config.go
+│   │       
+│   ├───post                    # Post service
+│   │   │   models.go           # Repo Interface 
+│   │   │   post_etcd_test.go
+│   │   │   post_test.go
+│   │   │   service.go          # Service Implementation
+│   │   │   
+│   │   ├───postpb
+│   │   │       post.pb.go
+│   │   │       post.proto
+│   │   │       
+│   │   └───storage             # Repo Implementations
+│   │       ├───etcd
+│   │       │       client.go
+│   │       │       repository.go
+│   │       │       
+│   │       └───memstorage
+│   │               repository.go
+│   │               storage.go
+│   │               testrepository.go
+│   │               
+│   └───user                    # User service
+│       │   models.go           # Repo Interface 
+│       │   service.go          # Service Implementation
+│       │   user_etcd_test.go
+│       │   user_test.go
+│       │   
+│       ├───storage             # Repo Implementations
+│       │   │   testrepository.go
+│       │   │   
+│       │   ├───etcd
+│       │   │       client.go
+│       │   │       repository.go
+│       │   │       
+│       │   └───memstorage
+│       │           repository.go
+│       │           storage.go
+│       │           
+│       └───userpb              # Protobuf files
+│               user.pb.go
+│               user.proto
+│               
+└───vendor
 ```
