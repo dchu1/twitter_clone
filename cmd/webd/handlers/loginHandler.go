@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -32,7 +33,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	res, err := AuthClient.CheckAuthentication(ctx, &authpb.UserCredential{Username: user.Email, Password: user.Password})
 	if err != nil {
-		APIResponse(w, r, http.StatusInternalServerError, "Database not responding", make(map[string]string))
+		APIResponse(w, r, http.StatusUnauthorized, fmt.Sprintf("Login unsuccessful: %s", err), make(map[string]string)) // send data to client side
 		return
 	}
 
@@ -50,7 +51,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		authToken, err := AuthClient.GetAuthToken(ctx, &authpb.UserId{UserId: user.UserId})
 		if err != nil {
-			APIResponse(w, r, http.StatusInternalServerError, "Database not responding", make(map[string]string))
+			APIResponse(w, r, http.StatusUnauthorized, fmt.Sprintf("Login unsuccessful: %s", err), make(map[string]string)) // send data to client side
 		}
 
 		cookie := http.Cookie{Name: "sessionId", Value: url.QueryEscape(authToken.Token), Path: "/", HttpOnly: true}
@@ -58,7 +59,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		APIResponse(w, r, http.StatusOK, "Login successful", make(map[string]string)) // send data to client side
 	} else {
-		APIResponse(w, r, http.StatusUnauthorized, "Login unsuccessful", make(map[string]string)) // send data to client side
+		APIResponse(w, r, http.StatusUnauthorized, "Login unsuccessful: User not authorized", make(map[string]string)) // send data to client side
 	}
 
 }
