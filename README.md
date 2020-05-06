@@ -45,6 +45,8 @@ for the config file. Otherwise they will use default values.
 **Note:-** To run on windows operating system, you need to remove the single quotes (' ') around the cluster definition.
 
     ```goreman start```
+    
+Our project targets the default cluster: "http://localhost:2379", "http://localhost:22379", "http://localhost:32379"
 
 # Project Structure
 Project structure is based on [package oriented design](https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html) 
