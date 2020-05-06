@@ -79,13 +79,12 @@ func (auth *authRepository) AddCredential(ctx context.Context, user *pb.UserCred
 			json.Unmarshal([]byte(usr), &users)
 			users[user.Username] = user.Password // add user
 			usersJson, err := json.Marshal(users)
-
 			usersStr := string(usersJson)
 			_, err = auth.storage.Put(context.Background(), "UserCred", usersStr)
 			if err != nil {
 				errorchan <- err
 			} else {
-				result <- nil
+				result <- &pb.Void{}
 			}
 		}
 
