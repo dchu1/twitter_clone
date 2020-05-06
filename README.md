@@ -41,7 +41,8 @@ for the config file. Otherwise they will use default values.
 2. Install [goreman](https://github.com/mattn/goreman)
 
     ```go get github.com/mattn/goreman```
-3. In the etcd directory, use goreman to start the etcd cluster. Goreman will read the Procfile. *Note that to run on windows, you need to remove the single quotes (' ') around the cluster definition.
+3. In the etcd directory, use goreman to start the etcd cluster. Goreman will read the Procfile. 
+**Note:-** To run on windows operating system, you need to remove the single quotes (' ') around the cluster definition.
 
     ```goreman start```
 
