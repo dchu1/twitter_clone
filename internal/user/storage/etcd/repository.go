@@ -382,7 +382,7 @@ func (userRepo *userRepository) GetUserByUsername(ctx context.Context, email str
 		if found {
 			result <- users[idx]
 		} else {
-			errorchan <- errors.New("user not found")
+			errorchan <- errors.New("wrong credentials")
 		}
 	}()
 

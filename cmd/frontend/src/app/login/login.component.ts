@@ -24,16 +24,18 @@ export class LoginComponent implements OnInit {
       "Password": this.password
     }
     this.apiService.postData("login", body).subscribe((response: any) => {
-      console.log("[Response]:: ", response);
+      // console.log("[Response]:: ", response);
       if (response.Status == 200) {
         this.isValid = true
         this.router.navigate(['./home'])
       }
-      else {
+      else if (response.Status == 500){
+        console.log("Database server not responding!!")
+      }
+      else{
         this.isValid = false
         console.log("Login unsuccessful")
       }
-
     },
       error => {
         console.log("[Error]:: ", error);

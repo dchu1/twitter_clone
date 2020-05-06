@@ -28,10 +28,13 @@ export class SignupComponent implements OnInit {
       Password: this.password
     }
     this.apiService.postData("signup", body).subscribe((response: any) => {
-      console.log("[Response]:: ", response);
+      // console.log("[Response]:: ", response);
        if (response.Status == 201) {
         this.isValidUsername = true
         this.router.navigate(['./login']);
+      }
+      else if (response.Status == 500){
+        console.log("Database server not responding!!")
       }
       else {
         this.isValidUsername = false

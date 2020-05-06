@@ -23,15 +23,18 @@ export class DashboardComponent implements OnInit {
 
   getNewsFeed() {
     this.apiService.getData("feed").subscribe((response: any) => {
-      console.log("[Response]:: ", response);
+      // console.log("[Response]:: ", response);
       this.newsData = []
-      if (response["posts"]){
+      if (response.Status == 500) {
+        console.log("Database server not responding!!")
+      } else {
+        if (response["posts"]) {
           response.posts.forEach(element => {
-              element.timestamp = new Date(element.timestamp).toLocaleTimeString()
+            element.timestamp = new Date(element.timestamp).toLocaleTimeString()
           });
           this.newsData = response.posts
+        }
       }
-        
     },
       error => {
         console.log("[Error]:: ", error);
@@ -42,24 +45,32 @@ export class DashboardComponent implements OnInit {
   getUserList() {
     this.usersData = []
     this.apiService.getData("user/following").subscribe((response: any) => {
-      console.log("[Response]  followers::", response);
-      let userArray = response["Users"]
-      if (userArray.length > 0) {
-        userArray.forEach(element => {
-          this.usersData.push({ firstName: element.firstname, lastName: element.lastname, userId: element.userId, status: "Unfollow" })
-        });
+      // console.log("[Response]  followers::", response);
+      if (response.Status == 500) {
+        console.log("Database server not responding!!")
+      } else {
+        let userArray = response["Users"]
+        if (userArray.length > 0) {
+          userArray.forEach(element => {
+            this.usersData.push({ firstName: element.firstname, lastName: element.lastname, userId: element.userId, status: "Unfollow" })
+          });
+        }
       }
     },
       error => {
         console.log("[Error]:: ", error);
       });
     this.apiService.getData("user/notfollowing").subscribe((response: any) => {
-      console.log("[Response] not followers:: ", response);
-      let userArray = response["Users"]
-      if (userArray.length > 0) {
-        userArray.forEach(element => {
-          this.usersData.push({ firstName: element.firstname, lastName: element.lastname, userId: element.userId, status: "Follow" })
-        });
+      // console.log("[Response] not followers:: ", response);
+      if (response.Status == 500) {
+        console.log("Database server not responding!!")
+      } else {
+        let userArray = response["Users"]
+        if (userArray.length > 0) {
+          userArray.forEach(element => {
+            this.usersData.push({ firstName: element.firstname, lastName: element.lastname, userId: element.userId, status: "Follow" })
+          });
+        }
       }
     },
       error => {
@@ -86,10 +97,14 @@ export class DashboardComponent implements OnInit {
       "Message": this.newTweet,
     }
     this.apiService.postData("post", body).subscribe((response: any) => {
-      console.log("[Response]:: ", response);
-      this.getNewsFeed()
+      // console.log("[Response]:: ", response);
+      if (response.Status == 500) {
+        console.log("Database server not responding!!")
+      } else {
+        this.getNewsFeed()
+        this.newTweet = ""
+      }
       this.router.navigate(['./home']);
-      this.newTweet = ""
     },
       error => {
         console.log("[Error]:: ", error);
@@ -107,7 +122,7 @@ export class DashboardComponent implements OnInit {
         if (item.status == "Follow") {
           this.apiService.postData("follow/create", body).subscribe((response: any) => {
             console.log("[Response]:: ", response);
-        
+
           },
             error => {
               console.log("[Error]:: ", error);
