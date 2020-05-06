@@ -268,7 +268,8 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint6
 			return nil
 		}
 		if _, err := concurrency.NewSTM(userRepo.storage, followUser); err != nil {
-			for {
+			for i := 0; i < 20; i++ {
+				fmt.Println("Retrying")
 				if _, err := concurrency.NewSTM(userRepo.storage, followUser); err == nil {
 					break
 				}
@@ -455,7 +456,7 @@ func (userRepo *userRepository) GetNotFollowing(ctx context.Context, userId uint
 		// remove Users not in user's following list
 		filteredUsers := users[:0]
 		for _, v := range users {
-			if _, exists := user.Following[v.AccountInformation.UserId]; !exists {
+			if _, exists := user.Following[v.AccountInformation.UserId]; !exists && v.AccountInformation.UserId != userId {
 				filteredUsers = append(filteredUsers, v)
 			}
 		}
