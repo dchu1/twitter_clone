@@ -41,45 +41,7 @@ func (userRepo *userRepository) CreateUser(ctx context.Context, user *userpb.Use
 	result := make(chan uint64, 1)
 	errorchan := make(chan error, 1)
 
-	// go func() {
-	// 	id, err := userRepo.getUserId(ctx)
-	// 	if err != nil {
-	// 		errorchan <- err
-	// 		return
-	// 	}
-	// 	info.UserId = id
-
-	// 	var buf bytes.Buffer
-	// 	if err := gob.NewEncoder(&buf).Encode(*info); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-
-	// 	// We'll check if the user already exists, then do a write if it does not
-	// 	createUser := func(stm concurrency.STM) error {
-	// 		if _, err := userRepo.storage.Get(ctx, userPrefix+strconv.FormatUint(info.UserId, 10), buf.String()); err != nil {
-	// 			return err
-	// 		}
-	// 		if _, err = userRepo.storage.Put(ctx, userPrefix+strconv.FormatUint(info.UserId, 10)+followingPrefix, buf2.String()); err != nil {
-	// 			// may need to also delete? or is that handled by etcd?
-	// 			return err
-	// 		}
-	// 		return nil
-	// 	}
-	// 	if _, err := concurrency.NewSTM(userRepo.storage, createUser); err != nil {
-	// 		errorchan <- err
-	// 		return
-	// 	}
-	// 	result <- info.UserId
-	// }()
-
 	go func() {
-		// userId, err := userRepo.getUserId(ctx)
-		// if err != nil {
-		// 	errorchan <- err
-		// 	return
-		// }
-		// user.AccountInformation.UserId = userId
-
 		userEncoded, err := encodeUser(user)
 		if err != nil {
 			errorchan <- err
@@ -225,55 +187,52 @@ func (userRepo *userRepository) GetAllUsers(ctx context.Context) ([]*pb.User, er
 // to reflect that a user is following another user
 func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint64, followedId uint64) error {
 	result := make(chan error, 1)
+
+	// TODO fix the stm function so that it can handle updating both user's maps. Needed to remove updating
+	// other users map as it was causing too many stm issues
 	go func() {
 		followUser := func(stm concurrency.STM) error {
 			// Get Values
 			followerK := userPrefix + strconv.FormatUint(followerId, 10)
-			followedK := userPrefix + strconv.FormatUint(followedId, 10)
-			followerV, followedV := stm.Get(followerK), stm.Get(followedK)
-
+			//followedK := userPrefix + strconv.FormatUint(followedId, 10)
+			// followerV, followedV := stm.Get(followerK), stm.Get(followedK)
+			followerV := stm.Get(followerK)
 			if followerV == "" {
 				return fmt.Errorf("following user %d not found", followerId)
 			}
-			if followedK == "" {
-				return fmt.Errorf("followed user %d not found", followedId)
-			}
+			// if followedK == "" {
+			// 	return fmt.Errorf("followed user %d not found", followedId)
+			// }
 			// Decode
 			follower, err := decodeUser([]byte(followerV))
 			if err != nil {
 				return err
 			}
-			followed, err := decodeUser([]byte(followedV))
-			if err != nil {
-				return err
-			}
+			// followed, err := decodeUser([]byte(followedV))
+			// if err != nil {
+			// 	return err
+			// }
 
 			// Modify
 			follower.Following[followedId] = followedId
-			followed.Followers[followerId] = followerId
+			// followed.Followers[followerId] = followerId
 
 			// Encode
 			followerEncoded, err := encodeUser(follower)
 			if err != nil {
 				return err
 			}
-			followedEncoded, err := encodeUser(followed)
-			if err != nil {
-				return err
-			}
+			// followedEncoded, err := encodeUser(followed)
+			// if err != nil {
+			// 	return err
+			// }
 
 			// Put
 			stm.Put(followerK, followerEncoded)
-			stm.Put(followedK, followedEncoded)
+			// stm.Put(followedK, followedEncoded)
 			return nil
 		}
 		if _, err := concurrency.NewSTM(userRepo.storage, followUser); err != nil {
-			for i := 0; i < 20; i++ {
-				fmt.Println("Retrying")
-				if _, err := concurrency.NewSTM(userRepo.storage, followUser); err == nil {
-					break
-				}
-			}
 			result <- err
 			return
 		}
@@ -296,44 +255,50 @@ func (userRepo *userRepository) FollowUser(ctx context.Context, followerId uint6
 }
 
 // UnFollowUser updates the following user's following map, and the followed user's followers map
-// to reflect that a user has unfollowed another user
+// to reflect that a user has unfollowed another user.
 func (userRepo *userRepository) UnFollowUser(ctx context.Context, followerId uint64, followedId uint64) error {
 	result := make(chan error, 1)
 
+	// TODO fix the stm function so that it can handle updating both user's maps. Needed to remove updating
+	// other users map as it was causing too many stm issues
 	go func() {
 		unfollowUser := func(stm concurrency.STM) error {
 			// Get Values
 			followerK := userPrefix + strconv.FormatUint(followerId, 10)
-			followedK := userPrefix + strconv.FormatUint(followedId, 10)
-			followerV, followedV := stm.Get(followerK), stm.Get(followedK)
+			//followedK := userPrefix + strconv.FormatUint(followedId, 10)
+			//followerV, followedV := stm.Get(followerK), stm.Get(followedK)
+			followerV := stm.Get(followerK)
+			if followerV == "" {
+				return fmt.Errorf("following user %d not found", followerId)
+			}
 
 			// Decode
 			follower, err := decodeUser([]byte(followerV))
 			if err != nil {
 				return err
 			}
-			followed, err := decodeUser([]byte(followedV))
-			if err != nil {
-				return err
-			}
+			// followed, err := decodeUser([]byte(followedV))
+			// if err != nil {
+			// 	return err
+			// }
 
 			// Modify
 			delete(follower.Following, followedId)
-			delete(followed.Followers, followerId)
+			//delete(followed.Followers, followerId)
 
 			// Encode
 			followerEncoded, err := encodeUser(follower)
 			if err != nil {
 				return err
 			}
-			followedEncoded, err := encodeUser(followed)
-			if err != nil {
-				return err
-			}
+			// followedEncoded, err := encodeUser(followed)
+			// if err != nil {
+			// 	return err
+			// }
 
 			// Put
 			stm.Put(followerK, followerEncoded)
-			stm.Put(followedK, followedEncoded)
+			//stm.Put(followedK, followedEncoded)
 
 			return nil
 		}
@@ -565,16 +530,6 @@ func convertToStrings(arr []uint64) ([]string, error) {
 }
 
 func findRange(array []uint64) ([2]string, error) {
-	// ret := [2]uint64{math.MaxUint64, 0}
-	// for i := 0; i < len(array); i++ {
-	// 	if ret[0] > array[i] {
-	// 		ret[0] = array[i]
-	// 	}
-	// 	if ret[1] < array[i] {
-	// 		ret[1] = array[i]
-	// 	}
-	// }
-	// return ret, nil
 	var ret [2]string
 	arr, err := convertToStrings(array)
 	if err != nil {
